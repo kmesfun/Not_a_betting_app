@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Live Season Simulator — NBA (Phase 1 MVP)</title>
+<style>
+  :root {
+    --bg: #0f1420;
+    --panel: #161d2e;
+    --panel-border: #262f45;
+    --text: #e6e9f0;
+    --text-dim: #8b93a7;
+    --east: #4f8cff;
+    --west: #ff8a4f;
+    --up: #3ecf8e;
+    --down: #ff5f6d;
+    --warn: #f4b93e;
+    --bar-track: #232b40;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    padding: 24px 32px 64px;
+  }
+  header { margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; }
+  .subtitle { color: var(--text-dim); font-size: 13px; }
+  .subtitle a { color: var(--text-dim); }
+  .meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin: 16px 0 24px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+  .meta-bar b { color: var(--text); font-weight: 600; }
+  .meta-bar button {
+    margin-left: auto;
+    background: var(--east);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .meta-bar button:hover { opacity: 0.9; }
+  .meta-bar button:disabled { opacity: 0.5; cursor: default; }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .panel h2 { font-size: 14px; margin: 0 0 14px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--text-dim); font-weight: 500; padding: 6px 10px; border-bottom: 1px solid var(--panel-border); white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid #1c2436; vertical-align: middle; }
+  tr:hover td { background: #1a2236; }
+  .rank { color: var(--text-dim); width: 28px; }
+  .team-cell { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .conf-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .conf-dot.east { background: var(--east); }
+  .conf-dot.west { background: var(--west); }
+  .bar-cell { min-width: 140px; }
+  .bar-track { position: relative; height: 16px; background: var(--bar-track); border-radius: 4px; overflow: hidden; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #4f8cff, #7db3ff); border-radius: 4px; }
+  .bar-label { position: relative; z-index: 1; font-size: 11px; line-height: 16px; padding: 0 6px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+  .pct { font-variant-numeric: tabular-nums; }
+  .low-conf { color: var(--warn); font-size: 11px; margin-left: 4px; cursor: help; }
+  form.explainer { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+  form.explainer:last-child { margin-bottom: 0; }
+  form.explainer label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 3px; }
+  form.explainer .row { display: flex; gap: 8px; }
+  form.explainer .row > div { flex: 1; }
+  select, input[type=number] {
+    width: 100%;
+    background: #0f1420;
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 7px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  form.explainer button {
+    background: #232b40;
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  form.explainer button:hover { background: #2b3550; }
+  .result { font-size: 13px; margin-top: 4px; padding: 10px 12px; border-radius: 7px; background: #0f1420; border: 1px solid var(--panel-border); display: none; }
+  .result.visible { display: block; }
+  .result .delta.up { color: var(--up); font-weight: 700; }
+  .result .delta.down { color: var(--down); font-weight: 700; }
+  .hr { height: 1px; background: var(--panel-border); margin: 18px 0; border: none; }
+  .footnote { color: var(--text-dim); font-size: 11px; margin-top: 18px; line-height: 1.5; }
+  .footnote code { background: #0f1420; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Live Season Simulator — NBA</h1>
+  <div class="subtitle">
+    Phase 1 MVP · Monte Carlo championship odds, mock data (real ingestion blocked — see
+    <a href="/docs" target="_blank">/docs</a> and docs/PRD.md §1a)
+  </div>
+</header>
+
+<div class="meta-bar" id="meta-bar">
+  <span>As of <b id="as-of">—</b></span>
+  <span>N sims <b id="n-sims">—</b></span>
+  <button id="refresh-btn">Refresh</button>
+</div>
+
+<div class="layout">
+  <div class="panel">
+    <h2>Championship odds — all 30 teams</h2>
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">#</th>
+          <th>Team</th>
+          <th>Championship</th>
+          <th>Conference</th>
+          <th>Playoffs</th>
+        </tr>
+      </thead>
+      <tbody id="team-rows">
+        <tr><td colspan="5" style="color: var(--text-dim); padding: 20px 10px;">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>Explain a roster event</h2>
+
+    <form class="explainer" id="injury-form">
+      <div><label>Type</label><b style="font-size:13px;">Injury</b></div>
+      <div class="row">
+        <div>
+          <label for="injury-team">Team</label>
+          <select id="injury-team" required></select>
+        </div>
+        <div>
+          <label for="injury-value">Value lost (Elo pts)</label>
+          <input type="number" id="injury-value" value="150" min="0" max="500" required />
+        </div>
+      </div>
+      <div>
+        <label for="injury-ramp">Ramp (games, 0 = immediate)</label>
+        <input type="number" id="injury-ramp" value="0" min="0" max="20" />
+      </div>
+      <button type="submit">Simulate injury impact</button>
+      <div class="result" id="injury-result"></div>
+    </form>
+
+    <hr class="hr" />
+
+    <form class="explainer" id="trade-form">
+      <div><label>Type</label><b style="font-size:13px;">Trade</b></div>
+      <div class="row">
+        <div>
+          <label for="trade-in">Team acquiring value</label>
+          <select id="trade-in" required></select>
+        </div>
+        <div>
+          <label for="trade-out">Team giving up value</label>
+          <select id="trade-out" required></select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="trade-value">Net Elo-point value</label>
+          <input type="number" id="trade-value" value="150" min="0" max="500" required />
+        </div>
+        <div>
+          <label for="trade-ramp">Ramp (games)</label>
+          <input type="number" id="trade-ramp" value="5" min="0" max="20" />
+        </div>
+      </div>
+      <button type="submit">Simulate trade impact</button>
+      <div class="result" id="trade-result"></div>
+    </form>
+
+    <div class="footnote">
+      Runs a fresh before/after simulation batch against the same mock season
+      snapshot (n=1000) — it doesn't persist the event. See
+      <code>events.py</code> / PRD P0.3.
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_LEAGUE = "nba";
+  let latestTeams = [];
+
+  function fmtPct(x) { return (x * 100).toFixed(1) + "%"; }
+
+  async function loadUpdate() {
+    const btn = document.getElementById("refresh-btn");
+    btn.disabled = true;
+    btn.textContent = "Loading…";
+    try {
+      const res = await fetch(`/v1/update?league=${API_LEAGUE}&sims=1000`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderUpdate(data);
+    } catch (err) {
+      document.getElementById("team-rows").innerHTML =
+        `<tr><td colspan="5" style="color: var(--down); padding: 16px 10px;">Failed to load: ${err.message}</td></tr>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Refresh";
+    }
+  }
+
+  function renderUpdate(data) {
+    latestTeams = data.teams;
+    document.getElementById("as-of").textContent = new Date(data.as_of).toLocaleString();
+    document.getElementById("n-sims").textContent = data.n_sims;
+
+    const maxChamp = Math.max(...data.teams.map(t => t.championship_probability), 0.0001);
+    const rows = data.teams.map((t, i) => {
+      const barWidth = Math.max(2, (t.championship_probability / maxChamp) * 100);
+      const lowConf = t.low_confidence
+        ? `<span class="low-conf" title="Standard error is large relative to the estimate — see PRD P0.2 noise-floor note">±low-conf</span>`
+        : "";
+      return `
+        <tr>
+          <td class="rank">${i + 1}</td>
+          <td><div class="team-cell"><span class="conf-dot ${confClass(t.team)}"></span>${t.team}</div></td>
+          <td class="bar-cell">
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${barWidth}%"></div>
+              <div class="bar-label">${fmtPct(t.championship_probability)}${lowConf}</div>
+            </div>
+          </td>
+          <td class="pct">${fmtPct(t.conference_probability)}</td>
+          <td class="pct">${fmtPct(t.playoff_probability)}</td>
+        </tr>`;
+    }).join("");
+    document.getElementById("team-rows").innerHTML = rows;
+
+    populateTeamSelects(data.teams.map(t => t.team).sort());
+  }
+
+  // Rough east/west split just for the color dot; purely cosmetic.
+  const WEST_TEAMS = new Set(["DAL","DEN","GSW","HOU","LAC","LAL","MEM","MIN","NOP","OKC","PHX","POR","SAC","SAS","UTA"]);
+  function confClass(team) { return WEST_TEAMS.has(team) ? "west" : "east"; }
+
+  function populateTeamSelects(teams) {
+    const selects = ["injury-team", "trade-in", "trade-out"];
+    for (const id of selects) {
+      const el = document.getElementById(id);
+      if (el.options.length) continue; // only populate once
+      el.innerHTML = teams.map(t => `<option value="${t}">${t}</option>`).join("");
+    }
+    document.getElementById("trade-out").selectedIndex = 1;
+  }
+
+  function renderImpactResult(elId, label, before, after) {
+    const delta = after - before;
+    const dir = delta >= 0 ? "up" : "down";
+    const arrow = delta >= 0 ? "▲" : "▼";
+    const el = document.getElementById(elId);
+    el.className = "result visible";
+    el.innerHTML = `
+      <div>${label}</div>
+      <div style="margin-top:6px;">
+        ${fmtPct(before)} → ${fmtPct(after)}
+        &nbsp;<span class="delta ${dir}">${arrow} ${fmtPct(Math.abs(delta))}</span>
+      </div>`;
+  }
+
+  document.getElementById("injury-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const team = document.getElementById("injury-team").value;
+    const value = document.getElementById("injury-value").value;
+    const ramp = document.getElementById("injury-ramp").value;
+    const btn = e.target.querySelector("button");
+    btn.disabled = true; btn.textContent = "Simulating…";
+    try {
+      const res = await fetch(`/v1/explain-injury?league=${API_LEAGUE}&team=${team}&value=${value}&ramp_games=${ramp}&sims=1000`);
+      if (!res.ok) throw new Error((await res.json()).detail || `HTTP ${res.status}`);
+      const data = await res.json();
+      renderImpactResult("injury-result", `${team} loses an estimated ${value} Elo pts of value:`, data.championship_probability_before, data.championship_probability_after);
+    } catch (err) {
+      const el = document.getElementById("injury-result");
+      el.className = "result visible";
+      el.innerHTML = `<span style="color: var(--down);">${err.message}</span>`;
+    } finally {
+      btn.disabled = false; btn.textContent = "Simulate injury impact";
+    }
+  });
+
+  document.getElementById("trade-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const teamIn = document.getElementById("trade-in").value;
+    const teamOut = document.getElementById("trade-out").value;
+    const value = document.getElementById("trade-value").value;
+    const ramp = document.getElementById("trade-ramp").value;
+    const btn = e.target.querySelector("button");
+    if (teamIn === teamOut) {
+      const el = document.getElementById("trade-result");
+      el.className = "result visible";
+      el.innerHTML = `<span style="color: var(--down);">Pick two different teams.</span>`;
+      return;
+    }
+    btn.disabled = true; btn.textContent = "Simulating…";
+    try {
+      const res = await fetch(`/v1/explain-trade?league=${API_LEAGUE}&team_in=${teamIn}&team_out=${teamOut}&value=${value}&ramp_games=${ramp}&sims=1000`);
+      if (!res.ok) throw new Error((await res.json()).detail || `HTTP ${res.status}`);
+      const data = await res.json();
+      const el = document.getElementById("trade-result");
+      el.className = "result visible";
+      const inDelta = data.team_in.championship_probability_after - data.team_in.championship_probability_before;
+      const outDelta = data.team_out.championship_probability_after - data.team_out.championship_probability_before;
+      el.innerHTML = `
+        <div><b>${teamIn}</b> (acquires value): ${fmtPct(data.team_in.championship_probability_before)} → ${fmtPct(data.team_in.championship_probability_after)}
+          <span class="delta ${inDelta >= 0 ? 'up' : 'down'}">${inDelta >= 0 ? '▲' : '▼'} ${fmtPct(Math.abs(inDelta))}</span></div>
+        <div style="margin-top:6px;"><b>${teamOut}</b> (gives up value): ${fmtPct(data.team_out.championship_probability_before)} → ${fmtPct(data.team_out.championship_probability_after)}
+          <span class="delta ${outDelta >= 0 ? 'up' : 'down'}">${outDelta >= 0 ? '▲' : '▼'} ${fmtPct(Math.abs(outDelta))}</span></div>`;
+    } catch (err) {
+      const el = document.getElementById("trade-result");
+      el.className = "result visible";
+      el.innerHTML = `<span style="color: var(--down);">${err.message}</span>`;
+    } finally {
+      btn.disabled = false; btn.textContent = "Simulate trade impact";
+    }
+  });
+
+  document.getElementById("refresh-btn").addEventListener("click", loadUpdate);
+  loadUpdate();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "simulator-api",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "simulator.api:app",
+        "--reload",
+        "--app-dir",
+        "/Users/kennedym/Documents/GitHub/Not_a_betting_app/.claude/worktrees/live-season-simulator-prd-c173e5/simulator/src",
+        "--port",
+        "8000"
+      ],
+      "port": 8000
+    }
+  ]
+}
