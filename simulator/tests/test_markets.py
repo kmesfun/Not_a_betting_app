@@ -110,3 +110,46 @@ class TestPolymarketParsing:
         payload = {"id": "7", "outcomes": '["A","B"]', "outcomePrices": '["0.5"]'}
         with pytest.raises(ValueError, match="2 outcomes but 1 prices"):
             client._parse_market(payload)
+
+
+class TestIncompleteBook:
+    """A book summing below 1 means outcomes are missing, not a negative vig.
+
+    Found while wiring the dashboard: the mock market priced only the top 8
+    teams, so prices summed to ~0.91 and devig normalized them all UP to
+    absorb the other 22 teams' share — inflating every price. That is the
+    systematic bias devigging exists to prevent.
+    """
+
+    def test_partial_book_is_rejected(self):
+        from simulator.markets.normalize import IncompleteBookError
+        # Top 3 of a 30-team field: legitimately sums well below 1.
+        with pytest.raises(IncompleteBookError, match="partial book"):
+            devig({"OKC": 0.44, "DAL": 0.09, "DEN": 0.09})
+
+    def test_error_names_the_shortfall_and_the_fix(self):
+        from simulator.markets.normalize import IncompleteBookError
+        try:
+            devig({"A": 0.30, "B": 0.20})
+        except IncompleteBookError as exc:
+            msg = str(exc)
+            assert "0.5000" in msg
+            assert "complete set" in msg
+        else:
+            pytest.fail("expected IncompleteBookError")
+
+    def test_complete_book_with_overround_still_works(self):
+        full = {f"T{i}": 0.03 for i in range(30)}
+        full["OKC"] = 0.25
+        result = devig(full)
+        assert result.overround > 0
+        assert sum(result.probabilities) == pytest.approx(1.0)
+
+    def test_slightly_under_one_is_tolerated(self):
+        # Wide spreads on a thin but complete book can dip just under 1.
+        result = devig({"A": 0.60, "B": 0.39})
+        assert sum(result.probabilities) == pytest.approx(1.0)
+
+    def test_incomplete_book_error_is_a_value_error(self):
+        from simulator.markets.normalize import IncompleteBookError
+        assert issubclass(IncompleteBookError, ValueError)

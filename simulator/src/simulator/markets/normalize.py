@@ -18,6 +18,21 @@ from enum import Enum
 import math
 
 
+# How far below 1.0 a book may sum before we treat it as incomplete rather
+# than as a (nonsensical) negative overround. Wide spreads on thin markets can
+# pull a complete book slightly under; a missing chunk of the field pulls it
+# well under.
+INCOMPLETE_BOOK_TOLERANCE = 0.02
+
+
+class IncompleteBookError(ValueError):
+    """Raised when prices sum below 1, which means outcomes are missing.
+
+    Separate from a plain ValueError so callers can distinguish "this feed is
+    incomplete, go fetch the rest" from "these prices are malformed".
+    """
+
+
 class DevigMethod(str, Enum):
     MULTIPLICATIVE = "multiplicative"  # proportional; the standard default
     ADDITIVE = "additive"              # spreads the overround evenly
@@ -67,7 +82,7 @@ def _power_devig(raw: list[float], tol: float = 1e-10, max_iter: int = 100) -> l
 
 
 def devig(
-    raw_prices: dict[str, float] | np.ndarray,
+    raw_prices: dict[str, float] | list[float],
     method: DevigMethod = DevigMethod.MULTIPLICATIVE,
     outcomes: tuple[str, ...] | None = None,
 ) -> NormalizedMarket:
@@ -88,6 +103,20 @@ def devig(
     total = float(sum(raw))
     if total <= 0:
         raise ValueError("prices sum to zero")
+
+    if total < 1.0 - INCOMPLETE_BOOK_TOLERANCE:
+        # A real book over a complete set of mutually exclusive outcomes sums
+        # to MORE than 1 — the excess is the vig. Summing to less than 1 means
+        # outcomes are missing (a top-N slice rather than the full field), and
+        # normalizing that up to 1 silently inflates every price to absorb the
+        # share belonging to outcomes that were never fetched. That is a
+        # systematic bias dressed as a correction, and it is exactly what
+        # devigging is supposed to prevent. Fetch the whole field instead.
+        raise IncompleteBookError(
+            f"prices sum to {total:.4f}, below 1 — this looks like a partial "
+            f"book ({len(raw)} outcomes). Devigging it would inflate every "
+            f"price. Fetch the complete set of mutually exclusive outcomes."
+        )
 
     if method is DevigMethod.MULTIPLICATIVE:
         probs = [v / total for v in raw]

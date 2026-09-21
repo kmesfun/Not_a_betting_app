@@ -121,6 +121,55 @@
   .hr { height: 1px; background: var(--panel-border); margin: 18px 0; border: none; }
   .footnote { color: var(--text-dim); font-size: 11px; margin-top: 18px; line-height: 1.5; }
   .footnote code { background: #0f1420; padding: 1px 5px; border-radius: 4px; }
+
+  /* ── Divergence panel ─────────────────────────────────────────────── */
+  .full-panel { margin-top: 24px; }
+  .panel-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .panel-head h2 { margin: 0; }
+  .mock-badge {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--warn); border: 1px solid var(--warn); border-radius: 4px;
+    padding: 2px 7px; font-weight: 600;
+  }
+  .scenario-bar {
+    display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+    padding: 12px 14px; background: #0f1420; border: 1px solid var(--panel-border);
+    border-radius: 8px; margin-bottom: 16px;
+  }
+  .scenario-bar .field { display: flex; flex-direction: column; gap: 3px; }
+  .scenario-bar label { font-size: 12px; color: var(--text-dim); }
+  .scenario-bar select, .scenario-bar input { width: auto; min-width: 110px; }
+  .scenario-bar button {
+    background: var(--east); color: #fff; border: none; padding: 8px 14px;
+    border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .scenario-bar button.ghost { background: #232b40; border: 1px solid var(--panel-border); color: var(--text); }
+  .scenario-bar button:hover { opacity: 0.9; }
+  .scenario-bar button:disabled { opacity: 0.5; cursor: default; }
+  .div-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .div-grid { grid-template-columns: 1fr; } }
+  /* Diverging bar: centre line is agreement, left is overvalued, right under. */
+  .gap-cell { min-width: 150px; }
+  .gap-track { position: relative; height: 16px; background: var(--bar-track); border-radius: 4px; }
+  .gap-zero { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: #3a4560; }
+  .gap-fill { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; }
+  .gap-fill.under { background: var(--up); left: 50%; }
+  .gap-fill.over { background: var(--down); right: 50%; }
+  .gap-num { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .gap-num.under { color: var(--up); }
+  .gap-num.over { color: var(--down); }
+  .z-cell { color: var(--text-dim); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .alert-dot { color: var(--warn); margin-left: 5px; }
+  tr.alerted td { background: #1b2033; }
+  .digest-box {
+    background: #0f1420; border: 1px solid var(--panel-border); border-radius: 8px;
+    padding: 14px 16px; font-size: 13px; line-height: 1.65; white-space: pre-wrap;
+    min-height: 120px;
+  }
+  .digest-box.silent { color: var(--text-dim); font-style: italic; }
+  .digest-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 8px; }
+  .digest-meta b.send { color: var(--up); }
+  .digest-meta b.hold { color: var(--text-dim); }
 </style>
 </head>
 <body>
@@ -217,9 +266,60 @@
   </div>
 </div>
 
+<div class="panel full-panel">
+  <div class="panel-head">
+    <h2>Model vs market</h2>
+    <span class="mock-badge" title="Synthetic prices from markets/mock_market.py. The Polymarket and Kalshi clients exist and are unit-tested but have never been run against live endpoints.">mock market data</span>
+  </div>
+
+  <div class="scenario-bar">
+    <div class="field">
+      <label for="div-team">Roster event</label>
+      <select id="div-team">
+        <option value="">Quiet day — no event</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="div-value">Elo lost</label>
+      <input type="number" id="div-value" value="110" min="0" max="500" />
+    </div>
+    <button id="div-run">Check for divergence</button>
+    <button id="div-quiet" class="ghost" title="Show the quiet-day case, where nothing should be sent">Quiet day</button>
+  </div>
+
+  <div class="div-grid">
+    <div>
+      <table>
+        <thead>
+          <tr>
+            <th>Team</th><th>Model</th><th>Market</th><th>Gap</th><th>z</th>
+          </tr>
+        </thead>
+        <tbody id="div-rows">
+          <tr><td colspan="5" style="color: var(--text-dim); padding: 20px 10px;">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="digest-meta" id="digest-meta">—</div>
+      <div class="digest-box" id="digest-body">—</div>
+      <div class="footnote">
+        Market prices are devigged across the <b>complete</b> field before any gap
+        is computed — a top-N slice sums below 1 and normalizing it would inflate
+        every price. A gap must clear both an absolute threshold and a multiple of
+        the model's own standard error before it is pushed, and a gap already
+        reported is not sent again. Nothing to send is the expected outcome on a
+        normal day.
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   const API_LEAGUE = "nba";
   let latestTeams = [];
+  let divergenceLoaded = false;
 
   function fmtPct(x) { return (x * 100).toFixed(1) + "%"; }
 
@@ -269,6 +369,14 @@
     document.getElementById("team-rows").innerHTML = rows;
 
     populateTeamSelects(data.teams.map(t => t.team).sort());
+
+    // Open on the case that shows the product: the leader goes down and the
+    // market has not repriced. The quiet-day button shows the other half.
+    if (!divergenceLoaded && data.teams.length) {
+      divergenceLoaded = true;
+      document.getElementById("div-team").value = data.teams[0].team;
+      loadDivergence(data.teams[0].team);
+    }
   }
 
   // Rough east/west split just for the color dot; purely cosmetic.
@@ -283,6 +391,12 @@
       el.innerHTML = teams.map(t => `<option value="${t}">${t}</option>`).join("");
     }
     document.getElementById("trade-out").selectedIndex = 1;
+
+    const divSel = document.getElementById("div-team");
+    if (divSel && divSel.options.length <= 1) {
+      divSel.innerHTML = `<option value="">Quiet day — no event</option>` +
+        teams.map(t => `<option value="${t}">${t} injured</option>`).join("");
+    }
   }
 
   function renderImpactResult(elId, label, before, after) {
@@ -354,6 +468,86 @@
     } finally {
       btn.disabled = false; btn.textContent = "Simulate trade impact";
     }
+  });
+
+
+  // ── Divergence ──────────────────────────────────────────────────────
+  function fmtGap(pts) { return (pts >= 0 ? "+" : "") + pts.toFixed(1) + "pt"; }
+
+  async function loadDivergence(team) {
+    const runBtn = document.getElementById("div-run");
+    const quietBtn = document.getElementById("div-quiet");
+    runBtn.disabled = quietBtn.disabled = true;
+    const prev = runBtn.textContent;
+    runBtn.textContent = "Simulating…";
+    try {
+      const params = new URLSearchParams({ league: API_LEAGUE, sims: "1000", top_n: "10" });
+      if (team) {
+        params.set("team", team);
+        params.set("value", document.getElementById("div-value").value || "110");
+      }
+      const res = await fetch(`/v1/divergence?${params}`);
+      if (!res.ok) throw new Error((await res.json()).detail || `HTTP ${res.status}`);
+      renderDivergence(await res.json());
+    } catch (err) {
+      document.getElementById("div-rows").innerHTML =
+        `<tr><td colspan="5" style="color: var(--down); padding: 16px 10px;">Failed: ${err.message}</td></tr>`;
+    } finally {
+      runBtn.disabled = quietBtn.disabled = false;
+      runBtn.textContent = prev;
+    }
+  }
+
+  function renderDivergence(data) {
+    const maxGap = Math.max(...data.divergences.map(d => Math.abs(d.delta_points)), 1);
+    document.getElementById("div-rows").innerHTML = data.divergences.map(d => {
+      const under = d.delta_points >= 0;           // model above market
+      const width = (Math.abs(d.delta_points) / maxGap) * 48;  // 48% = half-width
+      return `
+        <tr class="${d.alerted ? "alerted" : ""}">
+          <td><div class="team-cell"><span class="conf-dot ${confClass(d.team)}"></span>${d.team}${
+            d.alerted ? '<span class="alert-dot" title="Would be pushed">●</span>' : ""}</div></td>
+          <td class="pct">${fmtPct(d.model)}</td>
+          <td class="pct">${fmtPct(d.market)}</td>
+          <td class="gap-cell">
+            <div class="gap-track">
+              <div class="gap-zero"></div>
+              <div class="gap-fill ${under ? "under" : "over"}" style="width:${width}%"></div>
+            </div>
+            <div class="gap-num ${under ? "under" : "over"}" style="font-size:11px;margin-top:2px;">
+              ${fmtGap(d.delta_points)} ${under ? "undervalued" : "overvalued"}
+            </div>
+          </td>
+          <td class="z-cell">${d.z_score >= 0 ? "+" : ""}${d.z_score.toFixed(1)}</td>
+        </tr>`;
+    }).join("");
+
+    const scenario = data.scenario === "stale"
+      ? `${data.event_team} −${data.event_value_elo} Elo · market still on the pre-event board`
+      : "no roster event · market broadly agrees";
+    document.getElementById("digest-meta").innerHTML =
+      `${scenario}<br>overround ${(data.overround * 100).toFixed(1)}% · devig <b>${data.devig_method}</b> · ` +
+      (data.digest.send
+        ? `<b class="send">would send ${data.digest.count}</b>`
+        : `<b class="hold">nothing to send</b>`);
+
+    const box = document.getElementById("digest-body");
+    if (data.digest.send) {
+      box.className = "digest-box";
+      box.textContent = data.digest.body;
+    } else {
+      box.className = "digest-box silent";
+      box.textContent = "No gap cleared the threshold. Nothing is pushed today — "
+        + "a digest that fires every day is a digest people stop opening.";
+    }
+  }
+
+  document.getElementById("div-run").addEventListener("click", () => {
+    loadDivergence(document.getElementById("div-team").value || null);
+  });
+  document.getElementById("div-quiet").addEventListener("click", () => {
+    document.getElementById("div-team").value = "";
+    loadDivergence(null);
   });
 
   document.getElementById("refresh-btn").addEventListener("click", loadUpdate);
