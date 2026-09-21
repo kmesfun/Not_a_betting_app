@@ -188,11 +188,22 @@ def build_digest(
     """
     selected: list[Divergence] = []
     for d in divergences:
-        if len(selected) >= max_items:
-            break
-        if rule.qualifies(d) and state.is_news(d, rule):
+        if not rule.qualifies(d):
+            continue
+        if not state.is_news(d, rule):
+            # Already reported and not materially changed. Deliberately does
+            # NOT refresh the recorded delta, so a gap that drifts slowly still
+            # accumulates toward rearm_delta instead of resetting each day.
+            continue
+
+        # Record before the cap, not after. A qualifying gap that gets crowded
+        # out of today's digest is still a gap we have seen — if it were left
+        # unrecorded it would resurface tomorrow dressed as new news, which is
+        # how a digest teaches people to stop opening it. It stays visible on
+        # the board and in the divergence log; it just isn't pushed.
+        state.record(d)
+        if len(selected) < max_items:
             selected.append(d)
-            state.record(d)
     return selected
 
 

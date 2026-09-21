@@ -168,6 +168,41 @@ class TestDigest:
         many = [divergence(outcome=f"T{i}", model=0.20 + i * 0.01) for i in range(12)]
         assert len(build_digest(many, AlertRule(), state, max_items=3)) == 3
 
+    def test_crowded_out_gaps_do_not_resurface_as_news(self):
+        """Regression: gaps beyond max_items were never recorded as seen, so
+        they fired the next day as if new — a quiet day would still produce a
+        digest of yesterday's leftovers."""
+        state = DigestState()
+        many = [divergence(outcome=f"T{i}", model=0.20 + i * 0.01) for i in range(8)]
+
+        first = build_digest(many, AlertRule(), state, max_items=3)
+        assert len(first) == 3
+
+        second = build_digest(many, AlertRule(), state, max_items=3)
+        assert second == [], "crowded-out gaps leaked into the next digest"
+
+    def test_slow_drift_still_eventually_fires(self):
+        """A gap that widens gradually should not be suppressed forever by
+        having its baseline refreshed on every run.
+
+        Step sizes are kept clear of the 0.02 rearm threshold on purpose:
+        values landing exactly on it make the result depend on float error
+        (0.22 - 0.12 is 0.0999...), which is a fine outcome in production —
+        the alert simply fires a day later — but makes for a flaky test.
+        """
+        rule = AlertRule()
+        state = DigestState()
+        build_digest([divergence(model=0.20, market=0.12)], rule, state)
+
+        # Each step is comfortably below rearm_delta on its own.
+        for model in (0.205, 0.21, 0.215):
+            fired = build_digest([divergence(model=model, market=0.12)], rule, state)
+            assert fired == [], "a sub-threshold step should not fire"
+
+        # Accumulated drift is now well past the threshold.
+        widened = divergence(model=0.26, market=0.12)
+        assert len(build_digest([widened], rule, state)) == 1
+
     def test_rendered_digest_carries_disclaimer(self):
         body = render_digest([divergence()])
         assert "not betting advice" in body.lower()
