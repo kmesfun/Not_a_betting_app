@@ -15,6 +15,7 @@ scheduled-batch-plus-cache layer in front of this before it's a legitimate
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 try:
@@ -25,8 +26,11 @@ except ImportError as exc:  # pragma: no cover
         "api.py requires fastapi and uvicorn. Install with: pip install -r simulator/requirements.txt"
     ) from exc
 
+from .divergence import AlertRule, DigestState, build_digest, detect, render_digest
 from .events import injury, measure_event_impact, trade_leg
 from .leagues import LEAGUES
+from .markets.mock_market import DEFAULT_OVERROUND, quiet_market, stale_market
+from .markets.normalize import DevigMethod, devig
 from .mock_data import mock_remaining_schedule, mock_seed_ratings
 from .ratings import TeamRatings
 from .report import build_update
@@ -154,3 +158,95 @@ def get_explain_trade(
 @app.get("/v1/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/v1/divergence")
+def get_divergence(
+    league: str = Query("nba"),
+    team: str | None = Query(None, description="Team hit by a roster event; omit for a quiet day"),
+    value: float = Query(110.0, ge=0, le=500, description="Elo points lost by that team"),
+    top_n: int = Query(10, ge=2, le=30),
+    sims: int = Query(1000, ge=100, le=20000),
+    seed: int = Query(DEFAULT_SEED),
+    games_per_team: int = Query(DEFAULT_GAMES_PER_TEAM, ge=1, le=82),
+) -> dict:
+    """Model vs market, and the digest that would be pushed.
+
+    THE MARKET DATA HERE IS SYNTHETIC (markets/mock_market.py). The
+    Polymarket and Kalshi clients exist and are unit-tested, but have not
+    been run against live endpoints, and outcomes are not yet mapped to
+    venue market IDs. Every response says so in `market_source` and the
+    dashboard shows it; do not quietly present these numbers as real prices.
+
+    Two scenarios:
+      no `team`  - quiet day. The market broadly agrees, and the digest
+                   should come back empty. That is correct behaviour, not a
+                   failure: a digest that fires every day gets ignored.
+      `team` set - that team has taken a hit, our model has repriced, and
+                   the market is still quoting the pre-event board.
+    """
+    league_key, league_config = _load_league(league)
+    team_ratings = _team_ratings(league_config, seed)
+    teams = list(team_ratings.base)
+    schedule = mock_remaining_schedule(teams, games_per_team=games_per_team, seed=seed)
+
+    before = run_monte_carlo(
+        league_config, team_ratings.effective_ratings(), schedule, n_sims=sims, seed=seed
+    )
+
+    if team:
+        team_upper = _validate_team(team_ratings, team, league)
+        team_ratings.apply_event(injury(team_upper, value, ramp_games=0))
+        after = run_monte_carlo(
+            league_config, team_ratings.effective_ratings(), schedule, n_sims=sims, seed=seed
+        )
+        quotes = stale_market(before)
+        scenario = "stale"
+    else:
+        team_upper = None
+        after = before
+        quotes = quiet_market(before, seed=seed)
+        scenario = "quiet"
+
+    priced = [q.outcome for q in quotes]
+    model = {t: after.teams[t].championship_probability for t in priced}
+    errors = {t: after.teams[t].championship_standard_error for t in priced}
+
+    raw_total = sum(q.price for q in quotes)
+    # Devig across the complete field, THEN slice to the teams worth showing.
+    # Slicing first would hand devig a partial book (see IncompleteBookError).
+    divergences = detect(model, errors, quotes)[:top_n]
+
+    state = DigestState()
+    pushed = build_digest(divergences, AlertRule(), state)
+
+    return {
+        "league": league_key.upper(),
+        "as_of": datetime.now(timezone.utc).isoformat(),
+        "n_sims": after.n_sims,
+        "scenario": scenario,
+        "event_team": team_upper,
+        "event_value_elo": value if team_upper else None,
+        "market_source": "mock — synthetic prices, not live Polymarket/Kalshi",
+        "overround": round(raw_total - 1.0, 4),
+        "devig_method": DevigMethod.POWER.value,
+        "divergences": [
+            {
+                "team": d.outcome,
+                "model": round(d.model_probability, 4),
+                "model_se": round(d.model_se, 4),
+                "market": round(d.market_probability, 4),
+                "delta_points": round(d.delta_points, 2),
+                "z_score": round(d.z_score, 1),
+                "direction": d.direction,
+                "alerted": any(p.outcome == d.outcome for p in pushed),
+            }
+            for d in divergences
+        ],
+        "digest": {
+            "send": bool(pushed),
+            "count": len(pushed),
+            "body": render_digest(pushed),
+        },
+        "disclaimer": "Analysis and entertainment only. Not betting advice.",
+    }
