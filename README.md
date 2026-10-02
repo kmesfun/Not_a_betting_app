@@ -14,6 +14,8 @@ that currently blocks real data ingestion.
   CLI/API interface, and a small dashboard. Runs entirely on mock data
   pending the data-licensing decision. See
   [`simulator/README.md`](simulator/README.md) for setup and usage.
+- [`site/index.html`](site/index.html) — a static "Divergence Board"
+  landing page (model-vs-market framing). Self-contained, no backend calls.
 
 ## Quick start
 
@@ -27,6 +29,14 @@ python3 -m venv .venv
 .venv/bin/uvicorn simulator.api:app --reload       # API + dashboard at http://127.0.0.1:8000/
 .venv/bin/python -m pytest -q                      # 41 tests
 ```
+
+## Deploying the landing page
+
+[`vercel.json`](vercel.json) sets `outputDirectory: site` so Vercel serves
+`site/index.html` as a plain static site at the root — no framework preset,
+no build step, no backend. Import the repo as-is. (This only covers
+`site/`; the `simulator/` API and dashboard are a separate local tool, not
+part of this deploy.)
 
 ## Status
 

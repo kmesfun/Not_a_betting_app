@@ -11,3 +11,11 @@ dependencies = []
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.vercel]
+# Disambiguates Vercel's FastAPI auto-detection: with the Vercel project's
+# Root Directory set to this `simulator/` folder, it found two module-level
+# `app` variables under here -- src/simulator/api.py (the real app) and
+# tests/test_api.py (a fastapi.testclient.TestClient also named `app`) --
+# and refused to guess. Pin it to the real one explicitly.
+entrypoint = "src.simulator.api:app"
