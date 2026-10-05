@@ -1,7 +1,13 @@
 <!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Independent pricing for sports prediction markets. We simulate the rest of the NBA season and tell you when the market hasn't caught up to the news.">
 <title>Divergence Board</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<script>document.documentElement.classList.add("js");</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap">
 <style>
   :root {
     --ground: #FAFAF9;
@@ -12,6 +18,7 @@
     --line: #E4E3DF;
     --line-soft: #EFEEEA;
     --accent: #16324F;
+    --accent-soft: #16324F1A;
     --under: #15704F;
     --under-bg: #E6F1EC;
     --over: #A8392A;
@@ -22,6 +29,7 @@
     --display: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --ease: cubic-bezier(.2, .8, .2, 1);
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -33,6 +41,7 @@
       --line: #282C32;
       --line-soft: #1E2227;
       --accent: #9DC3E6;
+      --accent-soft: #9DC3E624;
       --under: #4FBE93;
       --under-bg: #14302640;
       --over: #E08575;
@@ -50,6 +59,7 @@
     --line: #282C32;
     --line-soft: #1E2227;
     --accent: #9DC3E6;
+    --accent-soft: #9DC3E624;
     --under: #4FBE93;
     --under-bg: #14302640;
     --over: #E08575;
@@ -59,6 +69,7 @@
   }
 
   * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 64px; }
   body {
     background: var(--ground);
     color: var(--ink);
@@ -69,50 +80,40 @@
   }
   .wrap { max-width: 1060px; margin: 0 auto; padding-inline: 20px; }
 
+  /* ── reveal-on-scroll ───────────────────────────────────── */
+  .js .reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s var(--ease), transform .7s var(--ease); transition-delay: var(--d, 0s); }
+  .js .reveal.in { opacity: 1; transform: none; }
+
   /* ── header ─────────────────────────────────────────────── */
   header.site {
     position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
-    background: color-mix(in srgb, var(--ground) 92%, transparent);
+    background: color-mix(in srgb, var(--ground) 90%, transparent);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--line-soft);
   }
-  header.site .wrap {
-    display: flex; align-items: center; gap: 16px;
-    padding-block: 14px;
-  }
-  .wordmark {
-    font-family: var(--display); font-weight: 700; font-size: 16px;
-    letter-spacing: -0.01em; margin-right: auto;
-  }
+  header.site .wrap { display: flex; align-items: center; gap: 18px; padding-block: 14px; }
+  .wordmark { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; margin-right: auto; }
   .wordmark span { color: var(--faint); font-weight: 500; }
-  .nav-link {
-    font-family: var(--mono); font-size: 12px; color: var(--muted);
-    text-decoration: none; letter-spacing: 0.02em;
-  }
+  .nav-link { font-family: var(--mono); font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.02em; }
   .nav-link:hover { color: var(--ink); }
+  @media (max-width: 640px) { .nav-link.opt { display: none; } }
 
   /* ── type ───────────────────────────────────────────────── */
-  .eyebrow {
-    font-family: var(--mono); font-size: 11px; font-weight: 500;
-    letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint);
-    margin: 0 0 20px;
-  }
+  .eyebrow { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); margin: 0 0 20px; }
   h1 {
-    font-family: var(--display); font-weight: 700;
-    font-size: clamp(38px, 6.2vw, 62px); line-height: 1.04;
-    letter-spacing: -0.035em; margin: 0 0 22px; text-wrap: balance;
-    max-width: 16ch;
+    font-family: var(--display); font-weight: 800; font-stretch: 104%;
+    font-size: clamp(38px, 6vw, 60px); line-height: 1.02;
+    letter-spacing: -0.04em; margin: 0 0 22px; text-wrap: balance; max-width: 15ch;
   }
-  h1 em { font-style: normal; color: var(--accent); }
-  h2 {
-    font-family: var(--display); font-weight: 600;
-    font-size: clamp(24px, 3.4vw, 33px); line-height: 1.12;
-    letter-spacing: -0.025em; margin: 0 0 14px; text-wrap: balance;
+  h1 em { font-style: normal; color: var(--accent); position: relative; white-space: nowrap; }
+  h1 em::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: .02em; height: .09em;
+    background: var(--accent); transform-origin: left; transform: scaleX(0); opacity: .35;
+    animation: underline 1.1s .9s var(--ease) forwards;
   }
-  h3 {
-    font-family: var(--display); font-weight: 600; font-size: 17px;
-    letter-spacing: -0.012em; margin: 0 0 7px;
-  }
+  @keyframes underline { to { transform: scaleX(1); } }
+  h2 { font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3.4vw, 33px); line-height: 1.1; letter-spacing: -0.03em; margin: 0 0 14px; text-wrap: balance; }
+  h3 { font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: -0.012em; margin: 0 0 7px; }
   .lede { font-size: 18px; color: var(--muted); max-width: 56ch; margin: 0 0 30px; }
   p { margin: 0 0 14px; }
   .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
@@ -122,164 +123,264 @@
 
   /* ── buttons ────────────────────────────────────────────── */
   .cta-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .btn {
-    font-family: var(--body); font-size: 14px; font-weight: 500;
-    padding: 11px 20px; border-radius: 7px; text-decoration: none;
-    border: 1px solid transparent; cursor: pointer; display: inline-block;
-  }
+  .btn { font-family: var(--body); font-size: 14px; font-weight: 500; padding: 11px 20px; border-radius: 7px; text-decoration: none; border: 1px solid transparent; cursor: pointer; display: inline-block; transition: transform .15s var(--ease), opacity .15s, border-color .15s; }
+  .btn:active { transform: translateY(1px); }
   .btn-primary { background: var(--ink); color: var(--ground); }
   .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: .45; cursor: default; }
   .btn-ghost { border-color: var(--line); color: var(--ink); background: transparent; }
   .btn-ghost:hover { border-color: var(--muted); }
-  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn:focus-visible, select:focus-visible, input:focus-visible, .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  .status-note {
-    font-family: var(--mono); font-size: 11.5px; color: var(--faint);
-    margin-top: 22px; letter-spacing: 0.01em;
-  }
-  .dot {
-    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-    background: var(--under); margin-right: 7px; vertical-align: 1px;
-  }
+  .status-note { font-family: var(--mono); font-size: 11.5px; color: var(--faint); margin-top: 22px; letter-spacing: 0.01em; }
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--under); margin-right: 7px; vertical-align: 1px; animation: pulse 2.2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--under) 55%, transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
 
-  /* ── the divergence card — the one place color is spent ──── */
-  .board {
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 12px; overflow: hidden; margin-top: 44px;
-  }
-  .board-head {
-    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-    padding: 15px 20px; border-bottom: 1px solid var(--line-soft);
-  }
-  .board-title {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--muted);
-  }
-  .tag {
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
-    text-transform: uppercase; padding: 3px 8px; border-radius: 4px;
-    background: var(--warn-bg); color: var(--warn); margin-left: auto;
-    border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent);
-  }
-  .trigger {
-    padding: 14px 20px; background: var(--ground);
-    border-bottom: 1px solid var(--line-soft);
-    font-size: 14.5px; color: var(--muted);
-  }
+  /* ── hero ───────────────────────────────────────────────── */
+  .hero { position: relative; overflow: hidden; padding-block: clamp(44px, 6vw, 76px) clamp(48px, 6vw, 80px); }
+  .fan { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%); mask-image: linear-gradient(180deg, #000 55%, transparent 100%); }
+  .hero .wrap { position: relative; }
+  .hero-grid { display: grid; gap: 44px; align-items: center; }
+  @media (min-width: 920px) { .hero-grid { grid-template-columns: 1.02fr .98fr; gap: 52px; } }
+  .hero .eyebrow, .hero h1, .hero .lede, .hero .cta-row, .hero .status-note { animation: rise .9s var(--ease) both; }
+  .hero .eyebrow { animation-delay: .05s; } .hero h1 { animation-delay: .15s; } .hero .lede { animation-delay: .3s; } .hero .cta-row { animation-delay: .42s; } .hero .status-note { animation-delay: .55s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+  /* ── panels: shared card chrome ─────────────────────────── */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .card-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--line-soft); }
+  .card-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .card-sub { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; background: var(--warn-bg); color: var(--warn); margin-left: auto; border: 1px solid color-mix(in srgb, var(--warn) 28%, transparent); }
+  .card-foot { padding: 12px 18px; border-top: 1px solid var(--line-soft); font-family: var(--mono); font-size: 11px; color: var(--faint); display: flex; gap: 6px 14px; flex-wrap: wrap; align-items: center; }
+  .linkbtn { background: none; border: none; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .progress { height: 2px; background: var(--line-soft); }
+  .progress i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+  /* live hero rows */
+  .rows { position: relative; margin: 10px 18px 12px; height: calc(var(--n) * var(--rh)); }
+  .row { position: absolute; left: 0; right: 0; top: 0; height: var(--rh); display: grid; align-items: center; gap: 10px; transition: transform .6s var(--ease), opacity .4s; will-change: transform; }
+  .live .row { grid-template-columns: 36px 1fr 52px; }
+  .live { --rh: 34px; --n: 8; }
+  .code { font-family: var(--mono); font-size: 12.5px; font-weight: 500; letter-spacing: .02em; }
+  .bar { position: relative; height: 10px; background: var(--line-soft); border-radius: 3px; }
+  .bar .fill { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 3px; }
+  .bar .whisk { position: absolute; top: 50%; height: 1px; background: var(--ink); opacity: .55; }
+  .bar .whisk::before, .bar .whisk::after { content: ""; position: absolute; top: -3px; width: 1px; height: 7px; background: var(--ink); }
+  .bar .whisk::before { left: 0; } .bar .whisk::after { right: 0; }
+  .pct { font-family: var(--mono); font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── model vs market board ──────────────────────────────── */
+  .board { margin-top: 40px; }
+  .trigger { padding: 14px 20px; background: var(--ground); border-bottom: 1px solid var(--line-soft); font-size: 14.5px; color: var(--muted); }
   .trigger b { color: var(--ink); font-weight: 500; }
   .board-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; min-width: 560px; }
-  thead th {
-    font-family: var(--mono); font-size: 10px; font-weight: 500;
-    letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);
-    text-align: right; padding: 11px 14px; border-bottom: 1px solid var(--line-soft);
-  }
+  thead th { font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); text-align: right; padding: 11px 14px; border-bottom: 1px solid var(--line-soft); }
   thead th:first-child, tbody td:first-child { text-align: left; padding-left: 20px; }
-  tbody td {
-    padding: 12px 14px; text-align: right; font-size: 14px;
-    border-bottom: 1px solid var(--line-soft);
-  }
+  tbody td { padding: 12px 14px; text-align: right; font-size: 14px; border-bottom: 1px solid var(--line-soft); }
   tbody tr:last-child td { border-bottom: none; }
   .team { font-weight: 500; font-family: var(--mono); font-size: 13px; letter-spacing: 0.02em; }
   .gap-col { width: 190px; }
   .gapbar { position: relative; height: 15px; }
-  .gapbar .axis {
-    position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px;
-    background: var(--line);
-  }
-  .gapbar .fill { position: absolute; top: 2px; bottom: 2px; border-radius: 2px; }
-  .fill.under { left: 50%; background: var(--under); }
-  .fill.over  { right: 50%; background: var(--over); }
+  .gapbar .axis { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+  .gapbar .gf { position: absolute; top: 2px; bottom: 2px; border-radius: 2px; width: 0; transition: width 1.1s var(--ease) var(--d, 0s); }
+  .in .gapbar .gf { width: var(--w); }
+  .gf.under { left: 50%; background: var(--under); }
+  .gf.over { right: 50%; background: var(--over); }
   .gaptext { font-family: var(--mono); font-size: 11.5px; margin-top: 3px; }
-  .gaptext.under { color: var(--under); }
-  .gaptext.over  { color: var(--over); }
-  .pill {
-    font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 3px;
-    letter-spacing: 0.06em; text-transform: uppercase;
-  }
+  .gaptext.under, .gaptext.over { }
+  .under { --c: var(--under); } .over { --c: var(--over); }
+  .gaptext.under { color: var(--under); } .gaptext.over { color: var(--over); }
+  .pill { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
   .pill.under { background: var(--under-bg); color: var(--under); }
-  .pill.over  { background: var(--over-bg);  color: var(--over); }
-  .board-foot {
-    padding: 13px 20px; border-top: 1px solid var(--line-soft);
-    font-family: var(--mono); font-size: 11px; color: var(--faint);
-    display: flex; gap: 14px; flex-wrap: wrap;
-  }
+  .pill.over { background: var(--over-bg); color: var(--over); }
+  .pill.quiet { background: var(--line-soft); color: var(--faint); }
+  .pill.alert { outline: 1px solid color-mix(in srgb, var(--c) 45%, transparent); }
 
-  /* ── sequence ───────────────────────────────────────────── */
-  .steps { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: 10px; overflow: hidden; }
+  /* ── timeline chart ─────────────────────────────────────── */
+  .chart-card { margin-top: 36px; }
+  .chart-wrap { padding: 10px 14px 4px; position: relative; touch-action: pan-y; }
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; cursor: crosshair; }
+  .chart text { font-family: var(--mono); font-size: 10.5px; fill: var(--faint); }
+  .chart .grid { stroke: var(--line-soft); stroke-width: 1; }
+  .chart .axisline { stroke: var(--line); stroke-width: 1; }
+  .chart .l-model { stroke: var(--accent); stroke-width: 2.6; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .chart .l-market { stroke: var(--ink); stroke-width: 2; fill: none; stroke-dasharray: 5 4; opacity: .8; }
+  .chart .gapfill { fill: var(--over); opacity: 0; transition: opacity 1s .2s; }
+  .chart.drawn .gapfill { opacity: .13; }
+  .chart .ev { stroke: var(--faint); stroke-width: 1; stroke-dasharray: 2 3; }
+  .chart .play { stroke: var(--ink); stroke-width: 1; }
+  .chart .pdot-m { fill: var(--accent); } .chart .pdot-k { fill: var(--ink); }
+  .readout { display: flex; gap: 6px 22px; flex-wrap: wrap; padding: 4px 18px 16px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .readout b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .readout .k { display: inline-block; width: 14px; height: 0; border-top: 2.5px solid var(--accent); vertical-align: 3px; margin-right: 6px; }
+  .readout .k.mk { border-top: 2px dashed var(--ink); }
+  .readout .gapv { color: var(--over); }
+
+  .steps { display: grid; gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); border-radius: 10px; overflow: hidden; margin-top: 22px; }
   @media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); } }
-  .step { background: var(--surface); padding: 24px 22px; }
-  .step-time {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-    color: var(--accent); margin-bottom: 12px; display: block;
-  }
+  .step { background: var(--surface); padding: 24px 22px; border-top: 2px solid transparent; opacity: .5; transition: opacity .5s, border-color .5s; }
+  .step.on { opacity: 1; border-top-color: var(--accent); }
+  .step-time { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--accent); margin-bottom: 12px; display: block; }
   .step p { font-size: 14.5px; color: var(--muted); margin: 0; }
+
+  /* ── demo ───────────────────────────────────────────────── */
+  .demo { --rh: 46px; --n: 8; }
+  .controls { display: grid; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line-soft); background: var(--ground); }
+  @media (min-width: 760px) { .controls { grid-template-columns: 150px 1fr auto; align-items: end; } }
+  .field label { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 5px; }
+  select { width: 100%; font: 14px var(--body); padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--ink); }
+  .demo .row { grid-template-columns: 40px 1fr 60px 96px; }
+  .demo .bar { height: 16px; }
+  .demo .ghost { position: absolute; left: 0; top: calc(100% + 3px); height: 3px; border-radius: 2px; background: var(--faint); opacity: .7; transition: width .5s var(--ease); }
+  .demo .fill { transition: width .22s linear; }
+  .demo .mkt { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); transition: left .5s var(--ease); }
+  .demo .mkt::after { content: ""; position: absolute; left: -2px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
+  .gaplab { font-family: var(--mono); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; line-height: 1.15; }
+  .gaplab .pill { font-size: 9px; padding: 1px 5px; }
+  .legend { display: flex; gap: 6px 18px; flex-wrap: wrap; padding: 12px 18px 0; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .legend i { display: inline-block; vertical-align: -2px; margin-right: 6px; }
+  .lg-a { width: 16px; height: 8px; background: var(--accent); border-radius: 2px; }
+  .lg-b { width: 16px; height: 3px; background: var(--faint); opacity: .7; border-radius: 2px; vertical-align: 2px; }
+  .lg-m { width: 2px; height: 12px; background: var(--ink); }
+  .demo .rows { margin-top: 14px; }
+  .runbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid var(--line-soft); }
+  .runbar .field { flex: 1 1 240px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .verdict { padding: 14px 18px; border-top: 1px solid var(--line-soft); background: var(--ground); font-size: 14.5px; color: var(--muted); min-height: 3.4em; }
+  .verdict b { color: var(--ink); font-weight: 500; }
+  .verdict .a-over { color: var(--over); font-family: var(--mono); font-size: 13px; } .verdict .a-under { color: var(--under); font-family: var(--mono); font-size: 13px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .check input { accent-color: var(--accent); width: 15px; height: 15px; }
+
+  /* ── precision ──────────────────────────────────────────── */
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .seg button { font: 500 12px var(--mono); padding: 8px 14px; background: transparent; color: var(--muted); border: none; cursor: pointer; border-right: 1px solid var(--line); }
+  .seg button:last-child { border-right: none; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
+  .prec { position: relative; height: 150px; margin: 18px 22px 8px; }
+  .prec .axis { position: absolute; left: 0; right: 0; bottom: 18px; height: 1px; background: var(--line); }
+  .prec .band { position: absolute; top: 0; bottom: 18px; background: var(--accent-soft); border-left: 1px solid var(--accent); border-right: 1px solid var(--accent); transition: left .35s var(--ease), width .35s var(--ease); }
+  .prec .truth { position: absolute; top: -4px; bottom: 14px; width: 0; border-left: 2px solid var(--ink); }
+  .prec .truth span { position: absolute; top: -18px; left: 6px; font-family: var(--mono); font-size: 11px; color: var(--ink); white-space: nowrap; }
+  .prec .tick { position: absolute; bottom: 0; font-family: var(--mono); font-size: 10.5px; color: var(--faint); transform: translateX(-50%); }
+  .prec .pt { position: absolute; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--accent); opacity: .75; transition: left .45s var(--ease); }
+  .prec-meta { display: flex; gap: 8px 28px; flex-wrap: wrap; padding: 6px 18px 16px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .prec-meta b { color: var(--ink); font-weight: 500; }
+  .prec-ctl { display: grid; gap: 14px; padding: 16px 18px; border-bottom: 1px solid var(--line-soft); background: var(--ground); }
+  @media (min-width: 760px) { .prec-ctl { grid-template-columns: auto 1fr; align-items: end; gap: 28px; } }
 
   /* ── two-col ────────────────────────────────────────────── */
   .cols { display: grid; gap: 40px; }
   @media (min-width: 820px) { .cols { grid-template-columns: 1fr 1fr; gap: 56px; } }
   .rule-list { list-style: none; padding: 0; margin: 0; }
-  .rule-list li {
-    padding: 13px 0; border-bottom: 1px solid var(--line-soft);
-    font-size: 15px; display: flex; gap: 12px; align-items: baseline;
-  }
+  .rule-list li { padding: 13px 0; border-bottom: 1px solid var(--line-soft); font-size: 15px; display: flex; gap: 12px; align-items: baseline; }
   .rule-list li:last-child { border-bottom: none; }
   .rule-list .mark { font-family: var(--mono); font-size: 13px; color: var(--faint); flex: none; }
-  .rule-list .no { color: var(--over); }
-  .rule-list .yes { color: var(--under); }
+  .rule-list .no { color: var(--over); } .rule-list .yes { color: var(--under); }
 
-  /* ── signup ─────────────────────────────────────────────── */
-  .signup {
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: 12px; padding: clamp(28px, 4vw, 42px);
-  }
+  /* ── signup + message preview ───────────────────────────── */
+  .signup { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: clamp(28px, 4vw, 42px); display: grid; gap: 34px; align-items: center; }
+  @media (min-width: 860px) { .signup { grid-template-columns: 1.1fr .9fr; gap: 48px; } }
   form { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 20px; }
-  input[type=email] {
-    flex: 1 1 240px; min-width: 0; padding: 11px 14px; font-size: 15px;
-    font-family: var(--body); border: 1px solid var(--line); border-radius: 7px;
-    background: var(--ground); color: var(--ink);
-  }
-  input[type=email]:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  input[type=email] { flex: 1 1 240px; min-width: 0; padding: 11px 14px; font-size: 15px; font-family: var(--body); border: 1px solid var(--line); border-radius: 7px; background: var(--ground); color: var(--ink); }
   .form-note { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-top: 12px; }
   #signup-ok { margin-top: 14px; font-size: 14px; color: var(--under); }
+  .phone { background: var(--ground); border: 1px solid var(--line); border-radius: 22px; padding: 14px 14px 18px; max-width: 340px; width: 100%; justify-self: center; }
+  .phone-top { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; color: var(--faint); text-align: center; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); margin-bottom: 14px; text-transform: uppercase; }
+  .bubble { background: var(--surface); border: 1px solid var(--line); border-radius: 16px 16px 16px 4px; padding: 12px 14px; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+  .bubble .m { font-family: var(--mono); font-size: 12px; }
+  .bubble .fine { display: block; margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+  .typing { display: inline-flex; gap: 4px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px 16px 16px 4px; }
+  .typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); animation: blink 1s infinite; }
+  .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes blink { 0%,60%,100% { opacity: .25; transform: none; } 30% { opacity: 1; transform: translateY(-2px); } }
+  .js .phone .typing, .js .phone .bubble { display: none; }
+  .js .phone.in .typing { display: inline-flex; animation: gone 0s 1.7s forwards; }
+  .js .phone.in .bubble { display: block; opacity: 0; transform: translateY(8px); animation: pop .6s 1.7s var(--ease) forwards; }
+  @keyframes gone { to { display: none; opacity: 0; } }
+  @keyframes pop { to { opacity: 1; transform: none; } }
 
   footer.site { border-top: 1px solid var(--line-soft); padding-block: 32px 44px; }
   footer.site .wrap { display: flex; gap: 16px; flex-wrap: wrap; align-items: baseline; }
   .disclaimer { font-family: var(--mono); font-size: 11px; color: var(--faint); max-width: 62ch; line-height: 1.7; }
 
-  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .js .reveal { opacity: 1; transform: none; }
+    h1 em::after { transform: scaleX(1); }
+    .js .phone .typing { display: none; } .js .phone .bubble { display: block; opacity: 1; transform: none; }
+    .step { opacity: 1; }
+  }
 </style>
+</head>
+<body>
 
 <header class="site">
   <div class="wrap">
     <div class="wordmark">Divergence<span>&nbsp;/ NBA</span></div>
-    <a class="nav-link" href="#how">How it works</a>
-    <a class="nav-link" href="#scope">What it isn't</a>
+    <a class="nav-link" href="#demo">Try it</a>
+    <a class="nav-link opt" href="#how">How it works</a>
+    <a class="nav-link opt" href="#precision">Precision</a>
+    <a class="nav-link opt" href="#scope">What it isn't</a>
     <a class="nav-link" href="#digest">Get the digest</a>
   </div>
 </header>
 
-<section class="wrap" style="padding-top: clamp(44px, 6vw, 72px);">
-  <p class="eyebrow">Independent pricing for sports prediction markets</p>
-  <h1>We tell you when the <em>market is wrong</em>.</h1>
-  <p class="lede">
-    We simulate the rest of the NBA season 50,000 times a night and compare our
-    numbers against live prices on Polymarket and Kalshi. When a trade or an
-    injury moves our model and the market hasn't repriced yet, you get a text.
-  </p>
-  <div class="cta-row">
-    <a class="btn btn-primary" href="#digest">Get the daily digest</a>
-    <a class="btn btn-ghost" href="#how">See how it works</a>
+<!-- ═══ hero ═══════════════════════════════════════════════════ -->
+<section class="hero">
+  <canvas class="fan" id="fan" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">Independent pricing for sports prediction markets</p>
+        <h1>We tell you when the <em>market is wrong</em>.</h1>
+        <p class="lede">
+          We simulate the rest of the NBA season 50,000 times a night and compare our
+          numbers against live prices on Polymarket and Kalshi. When a trade or an
+          injury moves our model and the market hasn't repriced yet, you get a text.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#demo">Reprice a season yourself</a>
+          <a class="btn btn-ghost" href="#how">See how it works</a>
+        </div>
+        <p class="status-note">
+          <span class="dot"></span>Model running nightly · track record starts with the first
+          published call · no paid users yet
+        </p>
+      </div>
+
+      <div class="card live" id="live" aria-label="Live simulation of championship odds, running in your browser">
+        <div class="card-head">
+          <span class="card-title">Simulating the season</span>
+          <span class="card-sub num" id="live-count">0 / 50,000</span>
+          <span class="tag">Mock league</span>
+        </div>
+        <div class="progress"><i id="live-prog"></i></div>
+        <div class="rows" id="live-rows"></div>
+        <div class="card-foot">
+          <span id="live-note">Running in your browser…</span>
+          <button class="linkbtn" id="live-replay" type="button" hidden>↻ replay</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <p class="status-note">
-    <span class="dot"></span>Model running nightly · track record starts with the first
-    published call · no paid users yet
+</section>
+
+<!-- ═══ the board ══════════════════════════════════════════════ -->
+<section class="wrap" id="board">
+  <p class="eyebrow reveal">What lands in your inbox</p>
+  <h2 class="reveal" style="--d:.05s">One screen: us against the market.</h2>
+  <p class="lede reveal" style="--d:.1s; margin-bottom:0;">
+    Gaps are measured after removing the market's built-in margin, so a favourite
+    can't look "wrong" just because prices sum to more than 100%.
   </p>
 
-  <div class="board">
-    <div class="board-head">
-      <span class="board-title">Model vs market</span>
-      <span class="num" style="font-size:11px;color:var(--faint);">Championship · 09:42 ET</span>
+  <div class="card board reveal" id="boardcard" style="--d:.15s">
+    <div class="card-head">
+      <span class="card-title">Model vs market</span>
+      <span class="card-sub">Championship · 09:42 ET</span>
       <span class="tag">Example — mock prices</span>
     </div>
     <div class="trigger">
@@ -289,66 +390,48 @@
     <div class="board-scroll">
       <table>
         <thead>
-          <tr>
-            <th>Team</th><th>Our model</th><th>Market</th>
-            <th class="gap-col">Gap</th><th>Status</th>
-          </tr>
+          <tr><th>Team</th><th>Our model</th><th>Market</th><th class="gap-col">Gap</th><th>Status</th></tr>
         </thead>
         <tbody>
           <tr>
             <td class="team">OKC</td>
-            <td class="num">4.6%</td>
-            <td class="num">44.8%</td>
-            <td class="gap-col">
-              <div class="gapbar"><span class="axis"></span><span class="fill over" style="width:47%"></span></div>
-              <div class="gaptext over">−40.2 pts</div>
-            </td>
+            <td class="num"><span class="cu" data-to="4.6" data-dec="1" data-suf="%">4.6%</span></td>
+            <td class="num"><span class="cu" data-to="44.8" data-dec="1" data-suf="%">44.8%</span></td>
+            <td class="gap-col"><div class="gapbar"><span class="axis"></span><span class="gf over" style="--w:47%"></span></div><div class="gaptext over">−<span class="cu" data-to="40.2" data-dec="1">40.2</span> pts</div></td>
             <td><span class="pill over">Overpriced</span></td>
           </tr>
           <tr>
             <td class="team">DAL</td>
-            <td class="num">15.5%</td>
-            <td class="num">8.0%</td>
-            <td class="gap-col">
-              <div class="gapbar"><span class="axis"></span><span class="fill under" style="width:9%"></span></div>
-              <div class="gaptext under">+7.5 pts</div>
-            </td>
+            <td class="num"><span class="cu" data-to="15.5" data-dec="1" data-suf="%">15.5%</span></td>
+            <td class="num"><span class="cu" data-to="8.0" data-dec="1" data-suf="%">8.0%</span></td>
+            <td class="gap-col"><div class="gapbar"><span class="axis"></span><span class="gf under" style="--w:9%;--d:.08s"></span></div><div class="gaptext under">+<span class="cu" data-to="7.5" data-dec="1">7.5</span> pts</div></td>
             <td><span class="pill under">Underpriced</span></td>
           </tr>
           <tr>
             <td class="team">ATL</td>
-            <td class="num">14.1%</td>
-            <td class="num">8.6%</td>
-            <td class="gap-col">
-              <div class="gapbar"><span class="axis"></span><span class="fill under" style="width:6.5%"></span></div>
-              <div class="gaptext under">+5.5 pts</div>
-            </td>
+            <td class="num"><span class="cu" data-to="14.1" data-dec="1" data-suf="%">14.1%</span></td>
+            <td class="num"><span class="cu" data-to="8.6" data-dec="1" data-suf="%">8.6%</span></td>
+            <td class="gap-col"><div class="gapbar"><span class="axis"></span><span class="gf under" style="--w:6.5%;--d:.16s"></span></div><div class="gaptext under">+<span class="cu" data-to="5.5" data-dec="1">5.5</span> pts</div></td>
             <td><span class="pill under">Underpriced</span></td>
           </tr>
           <tr>
             <td class="team">DEN</td>
-            <td class="num">14.1%</td>
-            <td class="num">9.3%</td>
-            <td class="gap-col">
-              <div class="gapbar"><span class="axis"></span><span class="fill under" style="width:5.7%"></span></div>
-              <div class="gaptext under">+4.8 pts</div>
-            </td>
+            <td class="num"><span class="cu" data-to="14.1" data-dec="1" data-suf="%">14.1%</span></td>
+            <td class="num"><span class="cu" data-to="9.3" data-dec="1" data-suf="%">9.3%</span></td>
+            <td class="gap-col"><div class="gapbar"><span class="axis"></span><span class="gf under" style="--w:5.7%;--d:.24s"></span></div><div class="gaptext under">+<span class="cu" data-to="4.8" data-dec="1">4.8</span> pts</div></td>
             <td><span class="pill under">Underpriced</span></td>
           </tr>
           <tr>
             <td class="team">GSW</td>
-            <td class="num">9.5%</td>
-            <td class="num">5.5%</td>
-            <td class="gap-col">
-              <div class="gapbar"><span class="axis"></span><span class="fill under" style="width:4.6%"></span></div>
-              <div class="gaptext under">+3.9 pts</div>
-            </td>
+            <td class="num"><span class="cu" data-to="9.5" data-dec="1" data-suf="%">9.5%</span></td>
+            <td class="num"><span class="cu" data-to="5.5" data-dec="1" data-suf="%">5.5%</span></td>
+            <td class="gap-col"><div class="gapbar"><span class="axis"></span><span class="gf under" style="--w:4.6%;--d:.32s"></span></div><div class="gaptext under">+<span class="cu" data-to="3.9" data-dec="1">3.9</span> pts</div></td>
             <td><span class="pill under">Underpriced</span></td>
           </tr>
         </tbody>
       </table>
     </div>
-    <div class="board-foot">
+    <div class="card-foot">
       <span>50,000 simulations</span>
       <span>Prices devigged across the full field</span>
       <span>Gaps shown in percentage points</span>
@@ -356,47 +439,143 @@
   </div>
 </section>
 
+<!-- ═══ how it works: timeline ═════════════════════════════════ -->
 <section class="wrap" id="how">
-  <p class="eyebrow">What happens when news breaks</p>
-  <h2>The gap has a shelf life.</h2>
-  <p class="lede">
+  <p class="eyebrow reveal">What happens when news breaks</p>
+  <h2 class="reveal" style="--d:.05s">The gap has a shelf life.</h2>
+  <p class="lede reveal" style="--d:.1s; margin-bottom:0;">
     Prediction markets absorb news well — eventually. The window between the
     report landing and the price moving is the only thing this product sells.
+    Drag across the chart to move through the night.
   </p>
-  <div class="steps">
-    <div class="step">
+
+  <div class="card chart-card reveal" id="chartcard" style="--d:.15s">
+    <div class="card-head">
+      <span class="card-title">OKC championship probability</span>
+      <span class="card-sub">19:00 → next day 13:00 ET</span>
+      <span class="tag">Illustrative — mock prices</span>
+    </div>
+    <div class="chart-wrap">
+      <svg class="chart" id="chart" viewBox="0 0 760 330" role="img" aria-label="Line chart: our model drops from about 44 percent to about 5 percent within an hour of the injury report, while the market price stays near 45 percent until the next morning and then slowly follows."></svg>
+    </div>
+    <div class="readout" id="readout" aria-live="off">
+      <span><i class="k"></i>Model <b id="ro-model">—</b></span>
+      <span><i class="k mk"></i>Market <b id="ro-mkt">—</b></span>
+      <span>Gap <b class="gapv" id="ro-gap">—</b></span>
+      <span id="ro-time" style="margin-left:auto;">19:00</span>
+      <button class="linkbtn" id="chart-replay" type="button">↻ replay</button>
+    </div>
+  </div>
+
+  <div class="steps" id="steps">
+    <div class="step" data-at="0.97">
       <span class="step-time">19:58 · The report</span>
       <h3>News lands</h3>
-      <p>
-        A wire report arrives as prose. We read it into a structured roster
-        event — who, how long, how much it matters — and hold anything the
-        model isn't sure about for a human.
-      </p>
+      <p>A wire report arrives as prose. We read it into a structured roster event — who, how long, how much it matters — and hold anything the model isn't sure about for a human.</p>
     </div>
-    <div class="step">
+    <div class="step" data-at="1.7">
       <span class="step-time">20:41 · The reprice</span>
       <h3>Our model moves</h3>
-      <p>
-        The team's rating drops, the season is re-simulated 50,000 times, and
-        every downstream probability moves with it. Championship, conference,
-        playoff odds — all at once.
-      </p>
+      <p>The team's rating drops, the season is re-simulated 50,000 times, and every downstream probability moves with it. Championship, conference, playoff odds — all at once.</p>
     </div>
-    <div class="step">
+    <div class="step" data-at="10.5">
       <span class="step-time">Next morning · The gap</span>
       <h3>The market lags</h3>
-      <p>
-        Contracts are still priced off last night's board. We measure the
-        difference in standard errors, not raw points, so a wide gap on a noisy
-        estimate doesn't get sent as a signal.
-      </p>
+      <p>Contracts are still priced off last night's board. We measure the difference in standard errors, not raw points, so a wide gap on a noisy estimate doesn't get sent as a signal.</p>
     </div>
   </div>
 </section>
 
+<!-- ═══ the demo ═══════════════════════════════════════════════ -->
+<section class="wrap" id="demo">
+  <p class="eyebrow reveal">Try it</p>
+  <h2 class="reveal" style="--d:.05s">Break a team. Watch the model move first.</h2>
+  <p class="lede reveal" style="--d:.1s; margin-bottom:0;">
+    This is the real simulation logic — Elo ratings, a 300-game remaining schedule,
+    a seeded playoff bracket — running 50,000 seasons in your browser against a
+    mock league. Pick a team and something that happened to it.
+  </p>
+
+  <div class="card demo reveal" id="demo-card" style="margin-top:36px; --d:.15s">
+    <div class="card-head">
+      <span class="card-title">Reprice the season</span>
+      <span class="card-sub" id="d-status">Waiting for the baseline run…</span>
+      <span class="tag">Mock league · mock prices</span>
+    </div>
+    <div class="controls">
+      <div class="field"><label for="d-team">Team</label><select id="d-team" disabled><option>…</option></select></div>
+      <div class="field"><label for="d-event">What happened</label>
+        <select id="d-event">
+          <option value="out_star">Franchise player ruled out for the season</option>
+          <option value="out_allstar">All-Star ruled out for the season</option>
+          <option value="trade_star">Team acquires a franchise player</option>
+          <option value="out_weeks">Franchise player out 3 weeks, back for the playoffs</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="d-run" type="button" disabled>Reprice the season</button>
+    </div>
+
+    <div class="legend">
+      <span><i class="lg-a"></i>Model, after the news</span>
+      <span><i class="lg-b"></i>Model, before</span>
+      <span><i class="lg-m"></i>Market (hasn't moved)</span>
+    </div>
+    <div class="rows" id="d-rows"></div>
+
+    <div class="runbar">
+      <div class="field">
+        <label for="d-catch">Hours later — the market catches up: <span id="d-catch-v" class="num">0%</span></label>
+        <input type="range" id="d-catch" min="0" max="100" value="0">
+      </div>
+      <label class="check"><input type="checkbox" id="d-devig" checked> Remove the market's margin (devig)</label>
+    </div>
+    <div class="verdict" id="d-verdict" aria-live="polite">Pick an event and run it. On a quiet day, nothing diverges.</div>
+    <div class="card-foot">
+      <span id="d-meta">50,000 seasons per run · same random numbers before and after, so the difference isn't noise</span>
+      <span>Rating changes are placeholder magnitudes, not fitted values. Alert rule: gap ≥ 3 pts and ≥ 3 standard errors.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ precision ══════════════════════════════════════════════ -->
+<section class="wrap" id="precision">
+  <p class="eyebrow reveal">Why 50,000 and not 1,000</p>
+  <h2 class="reveal" style="--d:.05s">Every probability is an estimate. Here's how wrong.</h2>
+  <p class="lede reveal" style="--d:.1s; margin-bottom:0;">
+    Each dot is one complete run of the simulator on the same season. If we
+    only ran 1,000 seasons, a genuine 5% longshot would come back anywhere from
+    about 3.7% to 6.4% — enough to invent a gap that isn't there.
+  </p>
+
+  <div class="card reveal" style="margin-top:36px; --d:.15s">
+    <div class="prec-ctl">
+      <div>
+        <div class="field"><label>True probability</label></div>
+        <div class="seg" role="group" aria-label="True probability">
+          <button type="button" data-p="0.01" aria-pressed="false">1%</button>
+          <button type="button" data-p="0.05" aria-pressed="true">5%</button>
+          <button type="button" data-p="0.4" aria-pressed="false">40%</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="p-n">Simulations per run: <span class="num" id="p-nv">1,000</span></label>
+        <input type="range" id="p-n" min="0" max="100" value="0">
+      </div>
+    </div>
+    <div class="prec" id="prec" role="img" aria-label="Scatter of 40 repeat simulation estimates around the true probability, narrowing as simulation count rises"></div>
+    <div class="prec-meta" aria-live="polite">
+      <span>±1 standard error <b id="p-se">—</b></span>
+      <span>Relative error <b id="p-rel">—</b></span>
+      <span>40 runs landed between <b id="p-range">—</b></span>
+    </div>
+    <div class="card-foot"><span>Dots are 40 fixed draws from the binomial sampling distribution, rescaled as the sample size changes — the spread you see is the real sampling error.</span></div>
+  </div>
+</section>
+
+<!-- ═══ scope ══════════════════════════════════════════════════ -->
 <section class="wrap" id="scope">
   <div class="cols">
-    <div>
+    <div class="reveal">
       <p class="eyebrow">What this isn't</p>
       <h2>Not a sportsbook. Not a tout.</h2>
       <p style="color:var(--muted); max-width:46ch;">
@@ -411,7 +590,7 @@
         <li><span class="mark no">✕</span><span>No cherry-picked record — losing stretches are published too</span></li>
       </ul>
     </div>
-    <div>
+    <div class="reveal" style="--d:.1s">
       <p class="eyebrow">Where the numbers come from</p>
       <h2>Reproducible, or it doesn't ship.</h2>
       <p style="color:var(--muted); max-width:46ch;">
@@ -429,22 +608,35 @@
   </div>
 </section>
 
+<!-- ═══ digest ═════════════════════════════════════════════════ -->
 <section class="wrap" id="digest">
-  <div class="signup">
-    <p class="eyebrow">The daily digest</p>
-    <h2>One message, only when something moved.</h2>
-    <p style="color:var(--muted); max-width:52ch; margin-bottom:0;">
-      Every gap that clears the threshold, what caused it, and where the market
-      currently sits. On a day when nothing diverges, nothing arrives — which is
-      most days, and is the point.
-    </p>
-    <form id="signup-form" novalidate>
-      <label for="email" style="position:absolute;left:-9999px;">Email address</label>
-      <input type="email" id="email" name="email" placeholder="you@example.com" required>
-      <button type="submit" class="btn btn-primary">Join the list</button>
-    </form>
-    <p id="signup-ok" hidden></p>
-    <p class="form-note">No spam. Unsubscribe in one click. 18+.</p>
+  <div class="signup reveal">
+    <div>
+      <p class="eyebrow">The daily digest</p>
+      <h2>One message, only when something moved.</h2>
+      <p style="color:var(--muted); max-width:52ch; margin-bottom:0;">
+        Every gap that clears the threshold, what caused it, and where the market
+        currently sits. On a day when nothing diverges, nothing arrives — which is
+        most days, and is the point.
+      </p>
+      <form id="signup-form" novalidate>
+        <label for="email" style="position:absolute;left:-9999px;">Email address</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required>
+        <button type="submit" class="btn btn-primary">Join the list</button>
+      </form>
+      <p id="signup-ok" hidden></p>
+      <p class="form-note">No spam. Unsubscribe in one click. 18+.</p>
+    </div>
+    <div class="phone" id="phone" aria-label="Example of the message you would receive">
+      <div class="phone-top">Divergence · NBA — example</div>
+      <div class="typing" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="bubble">
+        <b>OKC · championship</b><br>
+        <span class="m">Model 4.6% · market 44.8% (devigged)</span><br>
+        Gap −40.2 pts. Cause: leading scorer out for the season, reported 19:58. Model repriced 20:41.
+        <span class="fine">Mock example. Analysis, not betting advice.</span>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -455,26 +647,453 @@
       markets. It is not betting advice, it does not accept wagers, and it is not
       affiliated with Polymarket, Kalshi, the NBA, or any team. Probabilities are
       model estimates and carry sampling error. Past calibration does not predict
-      future accuracy. Figures shown on this page are illustrative examples from
-      a test run against mock market data, not live prices.
+      future accuracy. Figures shown on this page — including the interactive
+      demo, which simulates a mock league entirely in your browser — are
+      illustrative examples run against mock market data, not live prices.
     </p>
   </div>
 </footer>
 
+<!-- ═══ engine: a JS port of simulator/src/simulator (no DOM) ═══ -->
+<script id="engine">
+(function (global) {
+  "use strict";
+  // Mock league = simulator/src/simulator/mock_data.py with seed 2026: same 30 ratings,
+  // same 300-game remaining schedule. Playoffs = bracket.py: top 8 per conference,
+  // standard seeding, best-of-7 with 2-2-1-1-1 home court, East champ vs West champ.
+  var TEAMS = ["ATL","BOS","BKN","CHA","CHI","CLE","DET","IND","MIA","MIL","NYK","ORL","PHI","TOR","WAS",
+               "DAL","DEN","GSW","HOU","LAC","LAL","MEM","MIN","NOP","OKC","PHX","POR","SAC","SAS","UTA"];
+  var RATINGS = [1577.9,1572.4,1322.0,1486.8,1551.1,1538.5,1407.6,1431.9,1523.6,1389.1,1481.2,1347.3,1500.8,1380.4,1507.9,
+                 1624.0,1627.3,1606.3,1342.9,1551.4,1446.2,1375.4,1516.9,1566.4,1705.5,1473.9,1622.0,1161.9,1464.3,1496.9];
+  var GAMES = [[26,7],[16,29],[6,13],[27,22],[17,4],[28,18],[1,15],[9,24],[8,19],[11,21],[23,5],[12,25],[10,20],[2,0],[14,3],[11,28],[19,26],[29,6],[21,9],[4,14],[0,22],[25,7],[1,23],[20,17],[24,5],[18,2],[13,12],[3,27],[8,16],[10,15],[27,0],[24,5],[1,12],[16,14],[26,13],[29,19],[10,23],[15,28],[2,9],[3,7],[11,6],[17,4],[21,18],[8,20],[25,22],[16,5],[28,25],[29,11],[20,21],[26,23],[10,19],[22,17],[15,27],[6,9],[18,12],[24,4],[1,14],[2,0],[13,8],[3,7],[25,21],[9,17],[12,13],[29,26],[0,11],[8,24],[23,27],[1,20],[19,16],[4,18],[5,15],[3,28],[2,10],[7,22],[6,14],[23,11],[3,27],[0,17],[25,15],[26,9],[14,7],[29,10],[19,16],[4,13],[21,1],[2,8],[24,28],[18,5],[12,20],[22,6],[18,0],[4,23],[15,24],[17,19],[6,16],[7,9],[28,3],[12,13],[5,10],[20,25],[27,29],[8,26],[1,2],[11,14],[22,21],[20,16],[3,21],[0,6],[19,4],[26,15],[10,5],[24,7],[14,1],[18,8],[28,23],[22,13],[17,11],[29,2],[9,27],[25,12],[2,12],[17,18],[20,9],[3,28],[27,23],[8,7],[0,1],[10,13],[21,5],[6,16],[19,15],[4,11],[14,24],[25,26],[29,22],[28,10],[5,26],[13,29],[2,7],[11,4],[8,1],[9,20],[21,14],[23,27],[17,6],[24,25],[15,0],[18,19],[22,16],[3,12],[27,6],[8,7],[13,1],[11,22],[29,3],[17,23],[2,19],[18,24],[25,5],[14,4],[15,28],[9,0],[26,12],[16,10],[20,21],[26,0],[10,16],[22,4],[21,3],[13,17],[19,20],[23,6],[28,5],[8,29],[25,27],[14,18],[7,24],[15,11],[2,9],[12,1],[12,17],[21,27],[1,19],[9,5],[18,28],[13,0],[4,6],[25,14],[20,8],[7,23],[26,29],[15,11],[16,2],[22,24],[3,10],[27,29],[6,5],[4,11],[2,3],[23,28],[7,0],[21,14],[16,13],[8,18],[24,26],[25,10],[19,9],[17,12],[15,22],[1,20],[10,24],[26,6],[19,1],[3,0],[11,20],[22,17],[28,25],[5,29],[13,4],[16,7],[21,18],[27,9],[2,15],[23,12],[14,8],[29,16],[19,2],[23,13],[8,12],[14,10],[9,26],[28,22],[0,6],[15,21],[7,5],[20,3],[17,25],[18,1],[4,11],[24,27],[19,22],[11,1],[15,10],[9,2],[21,4],[5,16],[13,3],[7,20],[6,0],[29,18],[14,12],[23,27],[25,26],[8,28],[17,24],[19,12],[25,29],[21,16],[2,9],[7,5],[20,6],[3,24],[27,15],[22,18],[0,13],[8,14],[11,23],[10,4],[28,17],[26,1],[16,1],[23,13],[5,8],[3,20],[18,2],[7,9],[24,27],[21,11],[19,10],[22,12],[17,26],[25,28],[29,15],[14,6],[0,4],[29,21],[14,0],[7,23],[19,3],[6,9],[11,17],[15,2],[20,22],[28,13],[4,27],[18,12],[8,1],[25,16],[5,10],[24,26]];
+  var N = TEAMS.length, HOME = 100;
+  var BRACKET = [1,8,4,5,2,7,3,6];            // standard_seed_order(8)
+  var HOME_PATTERN = [1,1,0,0,1,0,1];          // higher seed hosts games 1,2,5,7
+  var CONF = [[0,14],[15,29]];                 // index ranges: East, West
+
+  var nameRank = TEAMS.map(function (t) { return TEAMS.slice().sort().indexOf(t); });
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function winP(ra, rb, h) { return 1 / (1 + Math.pow(10, -((ra + h) - rb) / 400)); }
+
+  function newAcc() { return { n: 0, champ: new Int32Array(N), conf: new Int32Array(N), playoff: new Int32Array(N) }; }
+
+  // ratingsRS drives the remaining regular season; ratingsPO drives the playoffs.
+  function makeSim(ratingsRS, ratingsPO) {
+    var pHome = new Float64Array(GAMES.length);
+    for (var g = 0; g < GAMES.length; g++) pHome[g] = winP(ratingsRS[GAMES[g][0]], ratingsRS[GAMES[g][1]], HOME);
+    var pairH = new Float64Array(N * N), pairA = new Float64Array(N * N);
+    for (var a = 0; a < N; a++) for (var b = 0; b < N; b++) {
+      pairH[a * N + b] = winP(ratingsPO[a], ratingsPO[b], HOME);
+      pairA[a * N + b] = winP(ratingsPO[a], ratingsPO[b], -HOME);
+    }
+    var wins = new Int16Array(N);
+    function series(hi, lo, rng) {
+      var ph = pairH[hi * N + lo], pa = pairA[hi * N + lo], hw = 0, lw = 0, gm = 0;
+      while (hw < 4 && lw < 4) { if (rng() < (HOME_PATTERN[gm % 7] ? ph : pa)) hw++; else lw++; gm++; }
+      return hw > lw ? hi : lo;
+    }
+    return function (seed, i0, i1, acc) {
+      for (var i = i0; i < i1; i++) {
+        var rng = mulberry32((seed ^ Math.imul(i + 1, 2654435761)) >>> 0);
+        wins.fill(0);
+        for (var g = 0; g < GAMES.length; g++) { if (rng() < pHome[g]) wins[GAMES[g][0]]++; else wins[GAMES[g][1]]++; }
+        var champs = [];
+        for (var c = 0; c < 2; c++) {
+          var idx = []; for (var t = CONF[c][0]; t <= CONF[c][1]; t++) idx.push(t);
+          idx.sort(function (x, y) { return (wins[y] - wins[x]) || (nameRank[x] - nameRank[y]); });
+          var seeds = idx.slice(0, 8);
+          for (var s = 0; s < 8; s++) acc.playoff[seeds[s]]++;
+          var round = BRACKET.map(function (k) { return seeds[k - 1]; });
+          while (round.length > 1) {
+            var next = [];
+            for (var r = 0; r < round.length; r += 2) next.push(series(round[r], round[r + 1], rng));
+            round = next;
+          }
+          acc.conf[round[0]]++; champs.push(round[0]);
+        }
+        acc.champ[series(champs[0], champs[1], rng)]++;
+        acc.n++;
+      }
+    };
+  }
+
+  function probs(counts, n) { var p = new Float64Array(N); for (var i = 0; i < N; i++) p[i] = counts[i] / Math.max(1, n); return p; }
+  function se(p, n) { return Math.sqrt(p * (1 - p) / Math.max(1, n)); }
+
+  // Power devig: find k so that sum(v^k) = target. Sum is decreasing in k for v in (0,1).
+  function solvePower(vals, target) {
+    var lo = 0.05, hi = 8;
+    for (var it = 0; it < 60; it++) {
+      var mid = (lo + hi) / 2, s = 0;
+      for (var i = 0; i < vals.length; i++) s += Math.pow(vals[i], mid);
+      if (s > target) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+  function inflate(q, overround) { var k = solvePower(q, overround); return q.map(function (v) { return Math.pow(v, k); }); }
+  function devig(raw) { var k = solvePower(raw, 1); return raw.map(function (v) { return Math.pow(v, k); }); }
+
+  global.SimEngine = { TEAMS: TEAMS, RATINGS: RATINGS, N: N, mulberry32: mulberry32, newAcc: newAcc, makeSim: makeSim,
+                       probs: probs, se: se, inflate: inflate, devig: devig, winP: winP };
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+
 <script>
-  document.getElementById("signup-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var input = document.getElementById("email");
-    var ok = document.getElementById("signup-ok");
-    if (!input.value || input.value.indexOf("@") === -1) {
-      ok.textContent = "That doesn't look like an email address — check it and try again.";
-      ok.style.color = "var(--over)";
-      ok.hidden = false;
+(function () {
+  "use strict";
+  var E = window.SimEngine, N = E.N, TEAMS = E.TEAMS;
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var SEED = 2026, N_SIMS = 50000, BATCH = reduce ? N_SIMS : 700;
+  function $(id) { return document.getElementById(id); }
+  function pct(x, d) { return (x * 100).toFixed(d == null ? 1 : d) + "%"; }
+  function fmt(n) { return Math.round(n).toLocaleString("en-US"); }
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function rank(arr) { return Array.from(arr.keys()).sort(function (a, b) { return arr[b] - arr[a]; }); }
+
+  /* ── chunked runner: really simulates, a few hundred seasons per frame so you can watch it converge ── */
+  function runChunked(opts) {
+    var sim = E.makeSim(opts.rs, opts.po), acc = E.newAcc(), done = 0, dead = false;
+    (function frame() {
+      if (dead) return;
+      var end = Math.min(opts.n, done + BATCH);
+      sim(opts.seed, done, end, acc); done = end;
+      opts.onFrame(acc, done === opts.n);
+      if (done < opts.n) requestAnimationFrame(frame);
+    })();
+    return function cancel() { dead = true; };
+  }
+
+  /* ── reveal on scroll + count-ups ─────────────────────── */
+  function countUp(el) {
+    var to = parseFloat(el.dataset.to), dec = +el.dataset.dec || 0, suf = el.dataset.suf || "";
+    if (reduce) { el.textContent = to.toFixed(dec) + suf; return; }
+    var t0 = performance.now(), dur = 1100;
+    (function tick(now) {
+      var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (to * e).toFixed(dec) + suf;
+      if (k < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (!en.isIntersecting) return;
+      var el = en.target; el.classList.add("in");
+      el.querySelectorAll(".cu").forEach(countUp);
+      if (el.id === "chartcard") startChart();
+      io.unobserve(el);
+    });
+  }, { threshold: 0.18 });
+  document.querySelectorAll(".reveal, #phone").forEach(function (el) { io.observe(el); });
+  document.querySelectorAll(".cu").forEach(function (el) { if (!reduce) el.textContent = "0" + (el.dataset.suf || ""); });
+
+  /* ── hero: season fan (canvas) ─────────────────────────── */
+  (function fan() {
+    var cv = $("fan"), ctx = cv.getContext("2d"), paths = [], W = 0, H = 0, prog = 0, raf;
+    var rng = E.mulberry32(11), K = 140;
+    for (var i = 0; i < 90; i++) {
+      var y = 0, drift = (rng() - 0.5) * 0.9, pts = [];
+      for (var k = 0; k < K; k++) { y += drift * 0.5 + (rng() - 0.5) * 3.2; pts.push(y); }
+      paths.push({ pts: pts, hi: i % 15 === 0 });
+    }
+    function size() {
+      var r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+      W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0); draw();
+    }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      var col = css("--accent"), upto = Math.floor(K * prog);
+      paths.forEach(function (p) {
+        ctx.beginPath();
+        for (var k = 0; k < upto; k++) {
+          var x0 = W > 920 ? 0.5 : 0.1, x = W * (x0 + (1 - x0) * k / (K - 1)), yy = H * 0.56 + p.pts[k] * (H / 150);
+          if (k) ctx.lineTo(x, yy); else ctx.moveTo(x, yy);
+        }
+        ctx.strokeStyle = col; ctx.globalAlpha = p.hi ? 0.34 : 0.1; ctx.lineWidth = p.hi ? 1.5 : 1; ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+    }
+    function go() {
+      var t0 = performance.now();
+      (function tick(now) { var k = Math.min(1, (now - t0) / 3400); prog = 1 - Math.pow(1 - k, 3); draw(); if (k < 1) raf = requestAnimationFrame(tick); })(t0);
+    }
+    window.addEventListener("resize", size);
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+    size(); if (reduce) { prog = 1; draw(); } else go();
+  })();
+
+  /* ── hero: live baseline simulation ────────────────────── */
+  var baseline = null;       // {p: Float64Array, counts}
+  var liveRows = [], LIVE_N = 8, LIVE_RH = 34, AXIS = 0.5;
+  (function buildLive() {
+    var host = $("live-rows");
+    for (var i = 0; i < N; i++) {
+      var r = document.createElement("div"); r.className = "row"; r.style.opacity = 0;
+      r.innerHTML = '<span class="code">' + TEAMS[i] + '</span><span class="bar"><span class="fill"></span><span class="whisk"></span></span><span class="pct">0.0%</span>';
+      host.appendChild(r);
+      liveRows.push({ el: r, fill: r.querySelector(".fill"), whisk: r.querySelector(".whisk"), pct: r.querySelector(".pct") });
+    }
+  })();
+  function paintLive(acc, done, t0) {
+    var p = E.probs(acc.champ, acc.n), order = rank(p);
+    $("live-count").textContent = fmt(acc.n) + " / " + fmt(N_SIMS);
+    $("live-prog").style.width = (acc.n / N_SIMS * 100) + "%";
+    order.forEach(function (team, pos) {
+      var row = liveRows[team], vis = pos < LIVE_N, s = E.se(p[team], acc.n);
+      row.el.style.transform = "translateY(" + (vis ? pos : LIVE_N) * LIVE_RH + "px)";
+      row.el.style.opacity = vis ? 1 : 0;
+      row.fill.style.width = Math.min(100, p[team] / AXIS * 100) + "%";
+      row.whisk.style.left = Math.max(0, (p[team] - s) / AXIS * 100) + "%";
+      row.whisk.style.width = Math.min(100, 2 * s / AXIS * 100) + "%";
+      row.pct.textContent = pct(p[team]);
+    });
+    if (done) {
+      var top = order[0];
+      $("live-note").textContent = "Done in " + ((performance.now() - t0) / 1000).toFixed(1) + "s · seed " + SEED + " · " + TEAMS[top] + " ±" + (E.se(p[top], acc.n) * 100).toFixed(2) + " pts";
+      $("live-replay").hidden = false;
+    }
+  }
+  var cancelLive = null;
+  function startLive() {
+    if (cancelLive) cancelLive();
+    $("live-replay").hidden = true; $("live-note").textContent = "Running in your browser…";
+    var t0 = performance.now();
+    cancelLive = runChunked({ rs: E.RATINGS, po: E.RATINGS, n: N_SIMS, seed: SEED, onFrame: function (acc, done) {
+      paintLive(acc, done, t0);
+      if (done) { baseline = { p: E.probs(acc.champ, acc.n), conf: E.probs(acc.conf, acc.n), playoff: E.probs(acc.playoff, acc.n) }; onBaseline(); }
+    } });
+  }
+  $("live-replay").addEventListener("click", startLive);
+
+  /* ── timeline chart ────────────────────────────────────── */
+  var MODEL = [[0,43.9],[1.7,43.9],[1.82,5.4],[1.95,4.6],[18,4.6]];
+  var MARKET = [[0,44.8],[3,44.9],[6,44.6],[8,44.7],[10,43.2],[11,41],[12,36.5],[13,30.8],[14,24.9],[15,19.2],[16,14.6],[17,11],[18,8.7]];
+  function at(pts, t) { for (var i = 1; i < pts.length; i++) if (t <= pts[i][0]) { var a = pts[i-1], b = pts[i], k = (t - a[0]) / (b[0] - a[0]); return a[1] + (b[1] - a[1]) * k; } return pts[pts.length-1][1]; }
+  var CW = 760, CH = 330, ML = 40, MR = 14, MT = 14, MB = 34, TMAX = 18, YMAX = 50;
+  function cx(t) { return ML + (CW - ML - MR) * t / TMAX; }
+  function cy(v) { return MT + (CH - MT - MB) * (1 - v / YMAX); }
+  function pathOf(pts) { return pts.map(function (p, i) { return (i ? "L" : "M") + cx(p[0]).toFixed(1) + " " + cy(p[1]).toFixed(1); }).join(" "); }
+  function clock(t) { var m = Math.round(19 * 60 + t * 60) % 1440; return ("0" + Math.floor(m / 60)).slice(-2) + ":" + ("0" + (m % 60)).slice(-2); }
+  var chart = $("chart"), chartT = 0, chartRaf = null, chartTouched = false, chartStarted = false;
+  (function buildChart() {
+    var s = "";
+    for (var v = 0; v <= YMAX; v += 10) s += '<line class="grid" x1="' + ML + '" x2="' + (CW - MR) + '" y1="' + cy(v) + '" y2="' + cy(v) + '"/><text x="' + (ML - 8) + '" y="' + (cy(v) + 3.5) + '" text-anchor="end">' + v + '%</text>';
+    for (var h = 0; h <= TMAX; h += 3) s += '<text x="' + cx(h) + '" y="' + (CH - 12) + '" text-anchor="middle">' + clock(h) + '</text>';
+    s += '<line class="axisline" x1="' + ML + '" x2="' + (CW - MR) + '" y1="' + cy(0) + '" y2="' + cy(0) + '"/>';
+    var gp = "", i, ts = []; for (i = 1.95; i <= TMAX; i += 0.25) ts.push(i); ts.push(TMAX);
+    gp = "M" + ts.map(function (t) { return cx(t).toFixed(1) + " " + cy(at(MARKET, t)).toFixed(1); }).join(" L") + " L" + ts.slice().reverse().map(function (t) { return cx(t).toFixed(1) + " " + cy(at(MODEL, t)).toFixed(1); }).join(" L") + " Z";
+    s += '<path class="gapfill" d="' + gp + '"/>';
+    s += '<line class="ev" x1="' + cx(0.97) + '" x2="' + cx(0.97) + '" y1="' + MT + '" y2="' + cy(0) + '"/><text x="' + (cx(0.97) + 5) + '" y="' + (MT + 10) + '">report 19:58</text>';
+    s += '<line class="ev" x1="' + cx(1.7) + '" x2="' + cx(1.7) + '" y1="' + MT + '" y2="' + cy(0) + '"/><text x="' + (cx(1.7) + 8) + '" y="' + cy(27) + '">model reprices 20:41</text><text x="' + (cx(1.7) + 8) + '" y="' + (cy(27) + 14) + '">market has not</text>';
+    s += '<path class="l-market" id="lm" d="' + pathOf(MARKET) + '"/>';
+    s += '<path class="l-model" id="lo" pathLength="1" d="' + pathOf(MODEL) + '"/>';
+    s += '<g id="ph" style="opacity:0"><line class="play" y1="' + MT + '" y2="' + cy(0) + '"/><circle class="pdot-m" r="4.5"/><circle class="pdot-k" r="4"/></g>';
+    s += '<rect id="hit" x="' + ML + '" y="0" width="' + (CW - ML - MR) + '" height="' + CH + '" fill="transparent"/>';
+    chart.innerHTML = s;
+  })();
+  function drawLines() {
+    var lo = $("lo"), lm = $("lm");
+    lo.style.strokeDasharray = "1"; lo.style.strokeDashoffset = reduce ? 0 : 1; lo.style.transition = reduce ? "none" : "stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1)";
+    lm.style.opacity = 0; lm.style.transition = reduce ? "none" : "opacity .6s .5s";
+    requestAnimationFrame(function () { requestAnimationFrame(function () { lo.style.strokeDashoffset = 0; lm.style.opacity = .8; chart.classList.add("drawn"); }); });
+  }
+  function setT(t) {
+    chartT = Math.max(0, Math.min(TMAX, t));
+    var m = at(MODEL, chartT), k = at(MARKET, chartT), ph = $("ph");
+    ph.style.opacity = 1;
+    ph.querySelector("line").setAttribute("x1", cx(chartT)); ph.querySelector("line").setAttribute("x2", cx(chartT));
+    ph.querySelector(".pdot-m").setAttribute("cx", cx(chartT)); ph.querySelector(".pdot-m").setAttribute("cy", cy(m));
+    ph.querySelector(".pdot-k").setAttribute("cx", cx(chartT)); ph.querySelector(".pdot-k").setAttribute("cy", cy(k));
+    $("ro-model").textContent = m.toFixed(1) + "%"; $("ro-mkt").textContent = k.toFixed(1) + "%";
+    var g = m - k; $("ro-gap").textContent = (g > 0 ? "+" : "−") + Math.abs(g).toFixed(1) + " pts";
+    $("ro-time").textContent = clock(chartT) + " ET";
+    document.querySelectorAll("#steps .step").forEach(function (s) { s.classList.toggle("on", chartT >= parseFloat(s.dataset.at)); });
+  }
+  function playChart() {
+    if (chartRaf) cancelAnimationFrame(chartRaf); chartTouched = false;
+    if (reduce) { setT(TMAX); return; }
+    setT(0);
+    var t0 = performance.now(), dur = 9000;
+    (function tick(now) {
+      if (chartTouched) return;
+      var k = Math.min(1, (now - t0) / dur); setT(TMAX * k);
+      if (k < 1) chartRaf = requestAnimationFrame(tick);
+    })(t0);
+  }
+  function startChart() { if (chartStarted) return; chartStarted = true; drawLines(); setTimeout(playChart, reduce ? 0 : 1300); }
+  function scrub(ev) {
+    var r = chart.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * CW;
+    chartTouched = true; if (chartRaf) cancelAnimationFrame(chartRaf);
+    setT((x - ML) / (CW - ML - MR) * TMAX);
+  }
+  chart.addEventListener("pointermove", scrub); chart.addEventListener("pointerdown", scrub);
+  $("chart-replay").addEventListener("click", playChart);
+
+  /* ── demo ──────────────────────────────────────────────── */
+  var EVENTS = {
+    out_star:   { label: "franchise player ruled out for the season", rs: -110, po: -110 },
+    out_allstar:{ label: "All-Star ruled out for the season",         rs: -55,  po: -55 },
+    trade_star: { label: "acquires a franchise player",               rs: 70,   po: 70 },
+    out_weeks:  { label: "franchise player out 3 weeks, back for the playoffs", rs: -50, po: 0 }
+  };
+  var D_RH = 46, D_N = 8, dRows = [], dState = { team: 24, after: null, before: null, market: null, shown: [], running: false, event: null };
+  var cancelDemo = null;
+  var ALERT_PTS = 0.03;
+
+  function buildMarket() {
+    // Market quotes the pre-news world with its own small disagreements, then adds ~7% overround.
+    var rng = E.mulberry32(77), q = Array.from(baseline.p).map(function (v) {
+      var u1 = rng() || 1e-9, u2 = rng(), z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      return Math.max(0.002, v * Math.exp(0.05 * z));
+    });
+    var s = q.reduce(function (a, b) { return a + b; }, 0); q = q.map(function (v) { return v / s; });
+    dState.marketFair = q;
+  }
+  function marketAt(lambda, after) {
+    // Market drifts toward the new model as it catches up; then (optionally) quotes with margin.
+    var q = dState.marketFair.map(function (v, i) { return (1 - lambda) * v + lambda * after[i]; });
+    var s = q.reduce(function (a, b) { return a + b; }, 0); q = q.map(function (v) { return Math.max(0.0005, v / s); });
+    var raw = E.inflate(q, 1.07);
+    return { raw: raw, fair: E.devig(raw) };
+  }
+  function pickShown(team) {
+    var order = rank(baseline.p).slice(0, D_N);
+    if (order.indexOf(team) < 0) order[D_N - 1] = team;
+    return order;
+  }
+  function buildDemoRows() {
+    var host = $("d-rows");
+    for (var i = 0; i < N; i++) {
+      var r = document.createElement("div"); r.className = "row"; r.style.opacity = 0;
+      r.innerHTML = '<span class="code">' + TEAMS[i] + '</span><span class="bar"><span class="ghost"></span><span class="fill"></span><span class="mkt"></span></span><span class="pct">–</span><span class="gaplab"></span>';
+      host.appendChild(r);
+      dRows.push({ el: r, ghost: r.querySelector(".ghost"), fill: r.querySelector(".fill"), mkt: r.querySelector(".mkt"), pct: r.querySelector(".pct"), gap: r.querySelector(".gaplab") });
+    }
+  }
+  function paintDemo(after, finalPass) {
+    var lambda = $("d-catch").value / 100, useDevig = $("d-devig").checked, m = marketAt(lambda, after);
+    var mk = useDevig ? m.fair : m.raw, shown = dState.shown, n = dState.running ? dState.n : N_SIMS;
+    var axis = 0.12;
+    shown.forEach(function (t) { axis = Math.max(axis, baseline.p[t], after[t], mk[t]); });
+    axis *= 1.12;
+    var order = finalPass ? shown.slice().sort(function (a, b) { return after[b] - after[a]; }) : shown;
+    var alerts = [];
+    dRows.forEach(function (r) { r.el.style.opacity = 0; r.el.style.pointerEvents = "none"; r.el.style.transform = "translateY(" + D_N * D_RH + "px)"; });
+    order.forEach(function (t, pos) {
+      var r = dRows[t], gap = after[t] - mk[t], s = E.se(after[t], n);
+      var isAlert = Math.abs(gap) >= ALERT_PTS && Math.abs(gap) >= 3 * s && !dState.running;
+      r.el.style.opacity = 1; r.el.style.transform = "translateY(" + pos * D_RH + "px)";
+      r.ghost.style.width = (baseline.p[t] / axis * 100) + "%";
+      r.fill.style.width = (after[t] / axis * 100) + "%";
+      r.mkt.style.left = (mk[t] / axis * 100) + "%";
+      r.pct.textContent = pct(after[t]);
+      var cls = gap < 0 ? "over" : "under";
+      r.gap.innerHTML = '<span style="color:var(--' + (Math.abs(gap) < 0.005 ? "faint" : cls) + ')">' + (gap >= 0 ? "+" : "−") + (Math.abs(gap) * 100).toFixed(1) + ' pts</span>' +
+        (isAlert ? '<span class="pill ' + cls + ' alert">' + (gap < 0 ? "Overpriced" : "Underpriced") + "</span>" : "");
+      if (isAlert) alerts.push({ t: t, gap: gap });
+    });
+    return alerts;
+  }
+  function verdict(alerts) {
+    var v = $("d-verdict"), ev = dState.event;
+    var lambda = $("d-catch").value;
+    if (!alerts.length) {
+      v.innerHTML = ev && lambda < 100
+        ? "<b>Nothing diverged enough to send.</b> The gap is under 3 points, or inside the noise. Quiet days send nothing — that's the product working."
+        : (ev ? "<b>The market caught up.</b> The window closed; the alert would have stopped firing once the gap fell under 3 points." : "<b>Quiet day.</b> Small disagreements between us and the market exist, but none clear the bar — so no message goes out.");
       return;
     }
-    ok.textContent = "Saved — " + input.value + " is on the list.";
-    ok.style.color = "var(--under)";
-    ok.hidden = false;
-    input.value = "";
+    var cause = ev ? "<b>" + TEAMS[dState.team] + "</b> " + ev.label + ". " : "";
+    v.innerHTML = cause + "<b>" + alerts.length + (alerts.length === 1 ? " alert" : " alerts") + " would send:</b> " + alerts.map(function (a) {
+      return '<span class="' + (a.gap < 0 ? "a-over" : "a-under") + '">' + TEAMS[a.t] + " " + (a.gap > 0 ? "+" : "−") + (Math.abs(a.gap) * 100).toFixed(1) + " pts</span>";
+    }).join(" · ");
+  }
+  function repaint(finalPass) { var a = paintDemo(dState.after || baseline.p, finalPass); verdict(a); return a; }
+
+  function runDemo() {
+    if (!baseline || dState.running) return;
+    var team = +$("d-team").value, ev = EVENTS[$("d-event").value];
+    var rs = Array.from(E.RATINGS), po = Array.from(E.RATINGS); rs[team] += ev.rs; po[team] += ev.po;
+    dState.team = team; dState.event = ev; dState.running = true; dState.shown = pickShown(team); dState.n = 0;
+    $("d-run").disabled = true; $("d-catch").value = 0; $("d-catch-v").textContent = "0%";
+    $("d-status").textContent = "Simulating… 0 / " + fmt(N_SIMS);
+    var t0 = performance.now();
+    cancelDemo = runChunked({ rs: rs, po: po, n: N_SIMS, seed: SEED, onFrame: function (acc, done) {
+      dState.n = acc.n; dState.after = E.probs(acc.champ, acc.n);
+      $("d-status").textContent = done ? "Done in " + ((performance.now() - t0) / 1000).toFixed(1) + "s" : "Simulating… " + fmt(acc.n) + " / " + fmt(N_SIMS);
+      if (done) { dState.running = false; $("d-run").disabled = false; repaint(true); } else paintDemo(dState.after, false);
+    } });
+  }
+
+  function onBaseline() {
+    if (dState.ready) return;
+    dState.ready = true;
+    buildMarket(); buildDemoRows();
+    var sel = $("d-team"); sel.innerHTML = ""; sel.disabled = false;
+    rank(baseline.p).forEach(function (t) { var o = document.createElement("option"); o.value = t; o.textContent = TEAMS[t] + " · " + pct(baseline.p[t]); sel.appendChild(o); });
+    sel.value = 24;
+    dState.shown = pickShown(24); dState.after = null;
+    $("d-run").disabled = false; $("d-status").textContent = "Baseline ready · seed " + SEED;
+    repaint(false);
+  }
+  $("d-run").addEventListener("click", runDemo);
+  $("d-team").addEventListener("change", function () {
+    if (dState.running) return;
+    dState.team = +this.value; dState.after = null; dState.event = null; dState.shown = pickShown(dState.team); $("d-catch").value = 0; $("d-catch-v").textContent = "0%"; repaint(false);
   });
+  $("d-event").addEventListener("change", function () { if (!dState.running) { dState.after = null; dState.event = null; $("d-catch").value = 0; $("d-catch-v").textContent = "0%"; repaint(false); } });
+  $("d-catch").addEventListener("input", function () { $("d-catch-v").textContent = this.value + "%"; if (dState.ready && !dState.running) repaint(true); });
+  $("d-devig").addEventListener("change", function () { if (dState.ready && !dState.running) repaint(true); });
+
+  /* ── precision ─────────────────────────────────────────── */
+  (function precision() {
+    var host = $("prec"), P = 0.05, Z = [], rng = E.mulberry32(5), dots = [], band, truth, ticks = [];
+    for (var i = 0; i < 40; i++) { var u1 = rng() || 1e-9, u2 = rng(); Z.push(Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)); }
+    host.innerHTML = '<div class="axis"></div><div class="band"></div><div class="truth"><span></span></div>';
+    band = host.querySelector(".band"); truth = host.querySelector(".truth");
+    for (i = 0; i < 40; i++) { var d = document.createElement("i"); d.className = "pt"; d.style.top = (14 + (i % 8) * 14) + "px"; host.appendChild(d); dots.push(d); }
+    for (i = 0; i < 5; i++) { var tk = document.createElement("span"); tk.className = "tick"; host.appendChild(tk); ticks.push(tk); }
+    function nOf(v) { return Math.round(1000 * Math.pow(50, v / 100) / 100) * 100; }
+    function render() {
+      var n = nOf(+$("p-n").value), s = Math.sqrt(P * (1 - P) / n), s0 = Math.sqrt(P * (1 - P) / 1000);
+      var lo = Math.max(0, P - 4 * s0), hi = P + 4 * s0, span = hi - lo;
+      function x(v) { return (v - lo) / span * 100; }
+      truth.style.left = x(P) + "%"; truth.querySelector("span").textContent = "true " + (P * 100).toFixed(P < 0.1 ? 1 : 0) + "%";
+      band.style.left = x(P - s) + "%"; band.style.width = (2 * s / span * 100) + "%";
+      var mn = 1, mx = 0;
+      dots.forEach(function (d, i) { var v = Math.max(lo, Math.min(hi, P + Z[i] * s)); mn = Math.min(mn, P + Z[i] * s); mx = Math.max(mx, P + Z[i] * s); d.style.left = x(v) + "%"; });
+      ticks.forEach(function (t, i) { var v = lo + span * i / 4; t.style.left = (i / 4 * 100) + "%"; t.textContent = (v * 100).toFixed(P < 0.1 ? 1 : 0) + "%"; });
+      $("p-nv").textContent = fmt(n); $("p-se").textContent = "± " + (s * 100).toFixed(2) + " pts"; $("p-rel").textContent = (s / P * 100).toFixed(0) + "% of the estimate";
+      $("p-range").textContent = (Math.max(0, mn) * 100).toFixed(2) + "% and " + (mx * 100).toFixed(2) + "%";
+    }
+    $("p-n").addEventListener("input", render);
+    document.querySelectorAll(".seg button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        P = parseFloat(b.dataset.p); document.querySelectorAll(".seg button").forEach(function (o) { o.setAttribute("aria-pressed", o === b ? "true" : "false"); }); render();
+      });
+    });
+    render();
+  })();
+
+  /* ── signup (not wired to a backend yet) ───────────────── */
+  $("signup-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = $("email"), ok = $("signup-ok");
+    if (!input.value || input.value.indexOf("@") === -1) {
+      ok.textContent = "That doesn't look like an email address — check it and try again."; ok.style.color = "var(--over)"; ok.hidden = false; return;
+    }
+    ok.textContent = "Saved — " + input.value + " is on the list."; ok.style.color = "var(--under)"; ok.hidden = false; input.value = "";
+  });
+
+  startLive();
+})();
 </script>
+</body>
+</html>

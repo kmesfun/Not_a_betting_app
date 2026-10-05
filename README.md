@@ -15,7 +15,10 @@ that currently blocks real data ingestion.
   pending the data-licensing decision. See
   [`simulator/README.md`](simulator/README.md) for setup and usage.
 - [`site/index.html`](site/index.html) — a static "Divergence Board"
-  landing page (model-vs-market framing). Self-contained, no backend calls.
+  landing page (model-vs-market framing) with animated charts and an
+  interactive demo. Self-contained, no backend calls: the demo is a JS port
+  of the simulator (same mock league as `mock_data.py`) running in the
+  browser, and agrees with the Python engine to within sampling error.
 
 ## Quick start
 
